@@ -553,19 +553,26 @@ const server = http.createServer(async (req, res) => {
 
   // Helper to save a single base64 image or video
   function saveBase64Image(data, filename) {
-    const imgMatches = data.match(/^data:image\/([a-zA-Z0-9.+]+);base64,(.+)$/);
-    const videoMatches = data.match(/^data:video\/([a-zA-Z0-9.+]+);base64,(.+)$/);
+    const commaIndex = data.indexOf(',');
     let buffer;
     let ext = '.jpg';
 
-    if (imgMatches) {
-      ext = '.' + imgMatches[1].replace('jpeg', 'jpg');
-      buffer = Buffer.from(imgMatches[2], 'base64');
-    } else if (videoMatches) {
-      ext = '.' + videoMatches[1].replace('quicktime', 'mov');
-      buffer = Buffer.from(videoMatches[2], 'base64');
+    if (data.startsWith('data:') && commaIndex !== -1) {
+      const header = data.substring(0, commaIndex).toLowerCase();
+      const base64Data = data.substring(commaIndex + 1);
+      buffer = Buffer.from(base64Data, 'base64');
+
+      if (header.includes('video/mp4')) ext = '.mp4';
+      else if (header.includes('video/webm')) ext = '.webm';
+      else if (header.includes('video/quicktime')) ext = '.mov';
+      else if (header.includes('video/ogg')) ext = '.ogg';
+      else if (header.includes('image/png')) ext = '.png';
+      else if (header.includes('image/webp')) ext = '.webp';
+      else if (header.includes('image/gif')) ext = '.gif';
+      else if (header.includes('image/svg')) ext = '.svg';
+      else ext = '.jpg';
     } else {
-      buffer = Buffer.from(data.replace(/^data:[^;]+;base64,/, ''), 'base64');
+      buffer = Buffer.from(data, 'base64');
       if (filename && path.extname(filename)) {
         ext = path.extname(filename);
       }
