@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Instalador de Marcador - Mao Store Extractor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-6">
+  <div class="max-w-lg w-full bg-slate-800 rounded-3xl p-8 border border-slate-700 shadow-2xl text-center space-y-6">
+    
+    <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto text-3xl shadow-lg shadow-indigo-500/30">
+      🛍️
+    </div>
+
+    <div>
+      <h1 class="text-2xl font-black text-white">Botón Mágico de Extracción</h1>
+      <p class="text-sm text-slate-400 mt-2">
+        Sin abrir consolas ni escribir códigos: simplemente arrastra este botón a tu barra de marcadores.
+      </p>
+    </div>
+
+    <!-- EL BOTÓN MARCADOR PARA ARRASTRAR -->
+    <div class="p-6 bg-slate-900/80 rounded-2xl border-2 border-dashed border-indigo-500/50 flex flex-col items-center justify-center gap-3">
+      <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">👇 Arrastra este botón a tu barra de marcadores arriba:</span>
+      <a 
+        href="javascript:(function(){var s=document.createElement('script');s.src='http://localhost:3000/extractor_facebook.js?t='+Date.now();document.body.appendChild(s);})();" 
+        class="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold text-base rounded-2xl shadow-xl shadow-indigo-500/25 cursor-grab active:cursor-grabbing transform hover:scale-105 transition-all select-none"
+        onclick="alert('¡No le des clic aquí! Tienes que arrastrarlo con el ratón hacia la barra de favoritos/marcadores de tu navegador (arriba, debajo de donde escribes las direcciones web). Si no ves la barra, presiona Ctrl + Shift + B.'); return false;"
+      >
+        🛍️ Extraer a Mao Store
+      </a>
+      <span class="text-[11px] text-slate-500">¿No ves la barra de marcadores? Presiona <kbd class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono text-slate-300">Ctrl + Shift + B</kbd></span>
+    </div>
+
+    <!-- PASOS -->
+    <div class="text-left bg-slate-900/50 rounded-2xl p-5 border border-slate-700/60 text-xs space-y-3 text-slate-300">
+      <div class="font-bold text-white uppercase text-[11px] tracking-wider text-indigo-400">¿Cómo usarlo en 3 clics?</div>
+      <div class="flex items-start gap-3">
+        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</span>
+        <span>Arrastra el botón morado de arriba a tu <strong>barra de marcadores</strong> de Chrome.</span>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</span>
+        <span>Abre tu página de <a href="https://www.facebook.com/marketplace/you/selling" target="_blank" class="text-indigo-400 underline font-bold">Facebook Marketplace - Tus Publicaciones</a>.</span>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">3</span>
+        <span>Haz clic en el marcador <strong>🛍️ Extraer a Mao Store</strong> que acabas de guardar en la barra.</span>
+      </div>
+    </div>
+
+    <div class="pt-2">
+      <a href="http://localhost:3000" class="text-xs text-slate-400 hover:text-white underline">
+        Volver a Mao Store
+      </a>
+    </div>
+
+  </div>
+</body>
+</html>

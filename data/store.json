@@ -1,0 +1,214 @@
+{
+  "settings": {
+    "storeName": "MAO STORE",
+    "storeSlogan": "Tu estilo, tu tecnología, tu tienda oficial",
+    "currencySymbol": "$",
+    "currencyCode": "COP",
+    "whatsappNumber": "573026926010",
+    "adminPin": "0809",
+    "bannerTitle": "Bienvenido a MAO STORE",
+    "bannerText": "Tu estilo, tu tecnología, tu tienda oficial",
+    "bannerBadge": "Catálogo Completo 2026",
+    "logoUrl": "/uploads/mao_1793668566159_ccl6_logo_LOGOS_Y_STICKERS__Logo___.png",
+    "bannerBgImage": "/uploads/mao_1793668574440_vldr_banner_1549272891870.jpg"
+  },
+  "categories": [
+    {
+      "id": "cat-ropa",
+      "name": "Ropa",
+      "icon": "shirt"
+    },
+    {
+      "id": "cat-calzado",
+      "name": "Calzado",
+      "icon": "footprints"
+    },
+    {
+      "id": "cat-tecnologia",
+      "name": "Tecnología",
+      "icon": "smartphone"
+    },
+    {
+      "id": "cat-accesorios",
+      "name": "Accesorios",
+      "icon": "watch"
+    },
+    {
+      "id": "cat-hogar",
+      "name": "Hogar",
+      "icon": "home"
+    },
+    {
+      "id": "cat-1793643122592-858",
+      "name": "General",
+      "icon": "tag"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-folder-1793643122595-78u4",
+      "name": "PROYECTOR GOODEE PRO",
+      "category": "Tecnología",
+      "price": 0,
+      "originalPrice": null,
+      "image": "/uploads/PROYECTOR%20GOODEE%20PRO/71-kqb-0XrL._AC_SL1500_.jpg",
+      "images": [
+        "/uploads/PROYECTOR%20GOODEE%20PRO/71-kqb-0XrL._AC_SL1500_.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/71iYy5QeEDL._AC_SL1500_.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/81KHc9tiz-L._AC_SL1500_.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/81wFqF0OYlL._AC_SL1500_.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/712CH-ThLfL._AC_SL1500_.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/818K7MtJjdL._AC_SL1500_.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/7104leSF7QL._AC_SL1500_.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/7123KU4Zi-L._AC_SL1500_.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/Gemini_Generated_Image_mbhv5umbhv5umbhv.jpg",
+        "/uploads/PROYECTOR%20GOODEE%20PRO/Gemini_Generated_Image_t0zvsxt0zvsxt0zv.jpg"
+      ],
+      "stock": 5,
+      "featured": false,
+      "description": "Producto: PROYECTOR GOODEE PRO.\nCargado automáticamente con 10 foto(s) desde la carpeta uploads.",
+      "createdAt": "2026-11-02T18:12:02.595Z",
+      "folderSource": "PROYECTOR GOODEE PRO"
+    },
+    {
+      "id": "prod-folder-1793643122594-1kty",
+      "name": "Product Images - STANLEY Quencher H2.0 Flow State - Vaso de 30 onzas, arándano",
+      "category": "General",
+      "price": 0,
+      "originalPrice": null,
+      "image": "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_01.jpg",
+      "images": [
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_01.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_11.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_21.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_31.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_41.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_51.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_61.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_71.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_81.jpg",
+        "/uploads/Product%20Images%20-%20STANLEY%20Quencher%20H2.0%20Flow%20State%20-%20Vaso%20de%2030%20onzas%2C%20ar%C3%A1ndano/product_image_91.jpg"
+      ],
+      "stock": 5,
+      "featured": false,
+      "description": "Producto: Product Images - STANLEY Quencher H2.0 Flow State - Vaso de 30 onzas, arándano.\nCargado automáticamente con 10 foto(s) desde la carpeta uploads.",
+      "createdAt": "2026-11-02T18:12:02.594Z",
+      "folderSource": "Product Images - STANLEY Quencher H2.0 Flow State - Vaso de 30 onzas, arándano"
+    },
+    {
+      "id": "prod-folder-1793643122594-tvxn",
+      "name": "Product Images - 10Amp Battery Charger Smart Car Trickle Charger 12V 24V Battery Maintainer",
+      "category": "Tecnología",
+      "price": 0,
+      "originalPrice": null,
+      "image": "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/Cargador-De-Bater%C3%ADa-Inteligente-10a-12v-Y-24v-Autom%C3%A1tico-Cuotas-sin-inter%C3%A9s-10-14-2026_01_18_PM.png",
+      "images": [
+        "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/Cargador-De-Bater%C3%ADa-Inteligente-10a-12v-Y-24v-Autom%C3%A1tico-Cuotas-sin-inter%C3%A9s-10-14-2026_01_18_PM.png",
+        "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/product_image_01.jpg",
+        "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/product_image_11.jpg",
+        "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/product_image_21.jpg",
+        "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/product_image_31.jpg",
+        "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/product_image_41.jpg",
+        "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/product_image_51.jpg",
+        "/uploads/Product%20Images%20-%2010Amp%20Battery%20Charger%20Smart%20Car%20Trickle%20Charger%2012V%2024V%20Battery%20Maintainer/product_image_61.jpg"
+      ],
+      "stock": 5,
+      "featured": false,
+      "description": "Producto: Product Images - 10Amp Battery Charger Smart Car Trickle Charger 12V 24V Battery Maintainer.\nCargado automáticamente con 8 foto(s) desde la carpeta uploads.",
+      "createdAt": "2026-11-02T18:12:02.594Z",
+      "folderSource": "Product Images - 10Amp Battery Charger Smart Car Trickle Charger 12V 24V Battery Maintainer"
+    },
+    {
+      "id": "prod-folder-1793643122593-06eg",
+      "name": "EDREDON TAMAÑO QUEEN GRIS OSCURO",
+      "category": "Hogar",
+      "price": 0,
+      "originalPrice": null,
+      "image": "/uploads/EDREDON%20TAMA%C3%91O%20QUEEN%20GRIS%20OSCURO/71GReL3yirL._AC_SL1500_.jpg",
+      "images": [
+        "/uploads/EDREDON%20TAMA%C3%91O%20QUEEN%20GRIS%20OSCURO/71GReL3yirL._AC_SL1500_.jpg",
+        "/uploads/EDREDON%20TAMA%C3%91O%20QUEEN%20GRIS%20OSCURO/71OEzpN%2BsoL._AC_SL1500_.jpg",
+        "/uploads/EDREDON%20TAMA%C3%91O%20QUEEN%20GRIS%20OSCURO/71PmOi655zL._AC_SL1500_.jpg",
+        "/uploads/EDREDON%20TAMA%C3%91O%20QUEEN%20GRIS%20OSCURO/71PmOi655zL._AC_SX425_.jpg",
+        "/uploads/EDREDON%20TAMA%C3%91O%20QUEEN%20GRIS%20OSCURO/71QGV3ihHaL._AC_SY300_SX300_QL70_FMwebp_.webp",
+        "/uploads/EDREDON%20TAMA%C3%91O%20QUEEN%20GRIS%20OSCURO/71t54BkGNnL._AC_SL1500_.jpg",
+        "/uploads/EDREDON%20TAMA%C3%91O%20QUEEN%20GRIS%20OSCURO/71TCLfEyV4L._AC_SL1500_.jpg"
+      ],
+      "stock": 5,
+      "featured": false,
+      "description": "Producto: EDREDON TAMAÑO QUEEN GRIS OSCURO.\nCargado automáticamente con 7 foto(s) desde la carpeta uploads.",
+      "createdAt": "2026-11-02T18:12:02.593Z",
+      "folderSource": "EDREDON TAMAÑO QUEEN GRIS OSCURO"
+    },
+    {
+      "id": "prod-folder-1793643122593-39gl",
+      "name": "CARPLAY 1",
+      "category": "Tecnología",
+      "price": 0,
+      "originalPrice": null,
+      "image": "/uploads/CARPLAY%201/71Hp8qMr1XL._AC_SY450_.jpg",
+      "images": [
+        "/uploads/CARPLAY%201/71Hp8qMr1XL._AC_SY450_.jpg",
+        "/uploads/CARPLAY%201/71RUueo-vxL._AC_SY450_.jpg",
+        "/uploads/CARPLAY%201/71t4SxwQ1JL._AC_SY450_.jpg",
+        "/uploads/CARPLAY%201/81l2uNR8QjL._AC_SY450_.jpg",
+        "/uploads/CARPLAY%201/81xAeuNDqiL._AC_SY450_.jpg",
+        "/uploads/CARPLAY%201/711UbdLYK-L._AC_SY450_.jpg",
+        "/uploads/CARPLAY%201/8127BayHyQL._AC_SY450_.jpg"
+      ],
+      "stock": 5,
+      "featured": false,
+      "description": "Producto: CARPLAY 1.\nCargado automáticamente con 7 foto(s) desde la carpeta uploads.",
+      "createdAt": "2026-11-02T18:12:02.593Z",
+      "folderSource": "CARPLAY 1"
+    },
+    {
+      "id": "prod-folder-1793643122593-fr9n",
+      "name": "AOCHUAN Smart XE 3-Axis Gimbal Stabilizer for iPhone&Android,Foldable",
+      "category": "Tecnología",
+      "price": 0,
+      "originalPrice": null,
+      "image": "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_01.jpg",
+      "images": [
+        "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_01.jpg",
+        "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_11.jpg",
+        "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_21.jpg",
+        "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_31.jpg",
+        "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_41.jpg",
+        "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_51.jpg",
+        "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_61.jpg",
+        "/uploads/AOCHUAN%20Smart%20XE%203-Axis%20Gimbal%20Stabilizer%20for%20iPhone%26Android%2CFoldable/product_image_71.jpg"
+      ],
+      "stock": 5,
+      "featured": false,
+      "description": "Producto: AOCHUAN Smart XE 3-Axis Gimbal Stabilizer for iPhone&Android,Foldable.\nCargado automáticamente con 8 foto(s) desde la carpeta uploads.",
+      "createdAt": "2026-11-02T18:12:02.593Z",
+      "folderSource": "AOCHUAN Smart XE 3-Axis Gimbal Stabilizer for iPhone&Android,Foldable"
+    },
+    {
+      "id": "prod-folder-1793643122592-y7az",
+      "name": "Aceite de vitamina E de 75,000 UI de 2 onzas líquidas, aceite de vitamina E 100_ puro para piel, car",
+      "category": "General",
+      "price": 0,
+      "originalPrice": null,
+      "image": "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/8-Aceite-Puro-De-Vitamina-E-75000-Ui-Hidratante-Para-Piel-Cara-Cuotas-sin-inter%C3%A9s-10-05-2026_09_45_PM.png",
+      "images": [
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/8-Aceite-Puro-De-Vitamina-E-75000-Ui-Hidratante-Para-Piel-Cara-Cuotas-sin-inter%C3%A9s-10-05-2026_09_45_PM.png",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_01.jpg",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_11.jpg",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_21.jpg",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_31.jpg",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_41.jpg",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_51.jpg",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_61.jpg",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_71.jpg",
+        "/uploads/Aceite%20de%20vitamina%20E%20de%2075%2C000%20UI%20de%202%20onzas%20l%C3%ADquidas%2C%20aceite%20de%20vitamina%20E%20100_%20puro%20para%20piel%2C%20car/product_image_81.jpg"
+      ],
+      "stock": 5,
+      "featured": false,
+      "description": "Producto: Aceite de vitamina E de 75,000 UI de 2 onzas líquidas, aceite de vitamina E 100_ puro para piel, car.\nCargado automáticamente con 10 foto(s) desde la carpeta uploads.",
+      "createdAt": "2026-11-02T18:12:02.592Z",
+      "folderSource": "Aceite de vitamina E de 75,000 UI de 2 onzas líquidas, aceite de vitamina E 100_ puro para piel, car"
+    }
+  ]
+}
