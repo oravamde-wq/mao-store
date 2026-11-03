@@ -47,7 +47,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="css/styles.css?v=3.0">
+  <link rel="stylesheet" href="css/styles.css?v=7.0">
 </head>
 <body class="min-h-full flex flex-col font-sans selection:bg-brand-500 selection:text-white">
 
@@ -164,9 +164,13 @@
     <div id="storeView" class="block">
       
       <!-- Hero Banner Section -->
-      <section id="heroBannerSection" class="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white overflow-hidden py-12 sm:py-16 transition-all duration-500 bg-cover bg-center">
-        <!-- Optional overlay for custom background photo -->
-        <div id="heroBgOverlay" class="absolute inset-0 bg-slate-950/70 z-0"></div>
+      <section id="heroBannerSection" class="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white overflow-hidden py-14 sm:py-20 transition-all duration-500 bg-cover bg-center min-h-[220px]">
+        <!-- Dynamic Video Background -->
+        <video id="heroBgVideo" autoplay loop muted playsinline webkit-playsinline preload="auto" class="absolute inset-0 w-full h-full object-cover z-0 hidden pointer-events-none transition-opacity duration-700">
+          <source id="heroBgVideoSource" src="" type="video/mp4">
+        </video>
+        <!-- Overlay for contrast and readability -->
+        <div id="heroBgOverlay" class="absolute inset-0 bg-slate-950/65 z-0 transition-colors"></div>
         <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:16px_16px] z-0"></div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div class="max-w-2xl">
@@ -486,24 +490,66 @@
                 <input type="text" id="settingBannerBadge" placeholder="Ej. Catálogo Completo 2026" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none">
               </div>
 
-              <!-- Banner Background Image -->
+              <!-- Banner Background Video (Dynamic) -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span class="flex items-center gap-1.5">
+                    <i data-lucide="video" class="w-3.5 h-3.5 text-indigo-600"></i> Video de Fondo de la Franja (Más Dinámico)
+                  </span>
+                  <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Recomendado</span>
+                </label>
+                <div class="p-3.5 rounded-xl border border-indigo-100 bg-indigo-50/30 space-y-3">
+                  <!-- Video Preview Box -->
+                  <div id="settingBannerVideoContainer" class="w-full h-32 rounded-xl border border-indigo-200 bg-slate-900 relative hidden overflow-hidden shadow-sm">
+                    <video id="settingBannerVideoPreview" autoplay loop muted playsinline class="w-full h-full object-cover">
+                      <source id="settingBannerVideoPreviewSource" src="" type="video/mp4">
+                    </video>
+                    <div class="absolute top-2 left-2">
+                      <span class="text-[10px] font-bold text-white bg-slate-900/80 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Video en reproducción
+                      </span>
+                    </div>
+                  </div>
+
+                  <input type="file" id="settingBannerVideoInput" accept="video/mp4,video/webm,video/ogg,video/quicktime" class="hidden" onchange="handleBannerVideoFileSelected(this)">
+                  
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="document.getElementById('settingBannerVideoInput').click()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-colors">
+                      <i data-lucide="upload" class="w-3.5 h-3.5"></i> Subir Video desde PC (MP4/WebM)
+                    </button>
+                    <button type="button" onclick="useSampleBannerVideo()" class="px-3 py-1.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-50 text-xs font-bold text-indigo-700 shadow-sm flex items-center gap-1.5 transition-colors">
+                      <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Usar Video Demo Moderno
+                    </button>
+                    <button type="button" onclick="removeSettingBannerVideo()" id="btnRemoveBannerVideo" class="px-2.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 text-xs font-bold hidden transition-colors">
+                      Quitar Video
+                    </button>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-500 mb-1">O pega el enlace/URL de un video (MP4):</label>
+                    <input type="text" id="settingBannerBgVideoUrl" placeholder="https://ejemplo.com/video-tienda.mp4" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-200 focus:border-brand-500 outline-none bg-white" oninput="handleBannerVideoUrlInput(this.value)">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Banner Background Image (Fallback / Alternative) -->
               <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
-                  <i data-lucide="image" class="w-3.5 h-3.5 text-indigo-600"></i> Imagen de Fondo de la Franja (Opcional)
+                  <i data-lucide="image" class="w-3.5 h-3.5 text-slate-500"></i> Imagen de Fondo de la Franja (Opcional si no usas video)
                 </label>
                 <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
                   <div id="settingBannerPreviewContainer" class="w-full h-24 rounded-xl border border-slate-200 bg-slate-900 bg-cover bg-center relative hidden overflow-hidden shadow-sm">
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <span class="text-xs font-bold text-white bg-slate-900/80 px-2.5 py-1 rounded-lg">Vista previa del fondo</span>
+                      <span class="text-xs font-bold text-white bg-slate-900/80 px-2.5 py-1 rounded-lg">Vista previa de imagen</span>
                     </div>
                   </div>
                   <input type="file" id="settingBannerBgInput" accept="image/*" class="hidden" onchange="handleBannerBgFileSelected(this)">
                   <div class="flex items-center gap-2">
                     <button type="button" onclick="document.getElementById('settingBannerBgInput').click()" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-sm">
-                      📁 Subir Fondo desde PC
+                      📁 Subir Imagen desde PC
                     </button>
                     <button type="button" onclick="removeSettingBannerBg()" id="btnRemoveBannerBg" class="px-2.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 text-xs font-bold hidden">
-                      Restablecer Fondo Oscuro Original
+                      Quitar Imagen
                     </button>
                   </div>
                   <input type="text" id="settingBannerBgUrl" placeholder="O ingresa enlace de imagen de fondo..." class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-brand-500 outline-none" oninput="handleBannerBgUrlInput(this.value)">
@@ -645,8 +691,8 @@
   </main>
 
   <!-- ================= MODAL: SUBIR / EDITAR PRODUCTO ================= -->
-  <div id="productModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8 animate-fade-in">
+  <div id="productModal" onclick="if(event.target === this) closeProductModal()" class="fixed inset-0 z-[100] hidden bg-slate-900/70 backdrop-blur-sm overflow-y-auto overscroll-contain flex justify-center items-start sm:items-center p-2 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-3 sm:my-8 animate-fade-in">
       
       <!-- Modal Header -->
       <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
@@ -845,26 +891,50 @@
   </div>
 
   <!-- ================= MODAL: DETALLE DEL PRODUCTO (CLIENTES) ================= -->
-  <div id="productDetailModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8 animate-fade-in relative">
+  <div id="productDetailModal" onclick="if(event.target === this) closeProductDetailModal()" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-sm overflow-y-auto overscroll-contain flex justify-center items-start sm:items-center p-2 sm:p-4 md:p-6">
+    <div class="bg-white rounded-2xl sm:rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden my-2 sm:my-8 animate-fade-in relative flex flex-col">
+      
+      <!-- Big, Easy-to-Tap Close Button (Always visible on mobile & desktop) -->
       <button 
+        type="button"
         onclick="closeProductDetailModal()" 
-        class="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/90 shadow hover:bg-white flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors"
+        class="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 w-11 h-11 rounded-full bg-slate-900/85 hover:bg-slate-900 text-white shadow-xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border border-white/20 backdrop-blur-sm"
+        title="Cerrar detalle (Volver al catálogo)"
       >
-        <i data-lucide="x" class="w-4 h-4"></i>
+        <i data-lucide="x" class="w-5 h-5 pointer-events-none"></i>
       </button>
 
       <div class="grid grid-cols-1 md:grid-cols-2">
         <!-- Image Area & Gallery Carousel -->
-        <div class="bg-slate-50 p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-100">
-          <div class="relative w-full aspect-square flex items-center justify-center bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200/80">
-            <img id="detailModalImage" src="" alt="" class="w-full h-full object-contain p-2 transition-all duration-300">
+        <div class="bg-slate-50 p-4 sm:p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-100">
+          <div id="detailImageContainer" onclick="handleImageContainerClick(event)" class="relative w-full aspect-square max-h-[360px] sm:max-h-none flex items-center justify-center bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 cursor-zoom-in touch-none select-none">
+            <img id="detailModalImage" src="" alt="" class="w-full h-full object-contain p-2 sm:p-3 transition-all duration-300 pointer-events-none select-none">
+            
+            <!-- Magnifying Glass Loupe (Lupa Interactiva) -->
+            <div id="imageZoomLoupe" class="hidden pointer-events-none absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full border-2 border-white shadow-[0_12px_35px_rgba(0,0,0,0.4)] z-30 overflow-hidden bg-no-repeat bg-white ring-1 ring-slate-900/15"></div>
+            
+            <!-- Zoom Hint Pill (Desktop/Mobile) -->
+            <div id="zoomHintPill" class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-900/70 text-white backdrop-blur-sm pointer-events-none flex items-center gap-1 z-10 transition-opacity">
+              <i data-lucide="zoom-in" class="w-3.5 h-3.5 text-brand-300"></i>
+              <span>Lupa activa</span>
+            </div>
+
+            <!-- Fullscreen Expand Button -->
+            <button 
+              type="button" 
+              onclick="openFullscreenLightbox(); event.stopPropagation();" 
+              class="absolute bottom-2.5 left-2.5 z-20 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-900/80 hover:bg-slate-900 text-white backdrop-blur-sm flex items-center gap-1.5 shadow-md border border-white/20 transition-transform hover:scale-105 active:scale-95"
+              title="Abrir en pantalla completa"
+            >
+              <i data-lucide="maximize-2" class="w-3.5 h-3.5 text-brand-300 pointer-events-none"></i>
+              <span>Pantalla Completa</span>
+            </button>
             
             <!-- Prev & Next Arrows (visible if > 1 image) -->
             <button 
               id="detailPrevImageBtn" 
               onclick="prevDetailImage()" 
-              class="hidden absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-transform hover:scale-110 z-10"
+              class="hidden absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-transform hover:scale-110 z-10"
               title="Foto anterior"
             >
               <i data-lucide="chevron-left" class="w-5 h-5"></i>
@@ -872,7 +942,7 @@
             <button 
               id="detailNextImageBtn" 
               onclick="nextDetailImage()" 
-              class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-transform hover:scale-110 z-10"
+              class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-transform hover:scale-110 z-10"
               title="Siguiente foto"
             >
               <i data-lucide="chevron-right" class="w-5 h-5"></i>
@@ -891,9 +961,9 @@
         </div>
 
         <!-- Details Info -->
-        <div class="p-6 flex flex-col justify-between">
+        <div class="p-5 sm:p-6 flex flex-col justify-between">
           <div>
-            <div class="flex items-center gap-2 mb-2">
+            <div class="flex items-center gap-2 mb-2 pr-12">
               <span id="detailModalCategory" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-50 text-brand-600 uppercase">
                 Categoría
               </span>
@@ -902,12 +972,12 @@
               </span>
             </div>
 
-            <h2 id="detailModalName" class="text-xl font-black text-slate-900 leading-snug">
+            <h2 id="detailModalName" class="text-lg sm:text-2xl font-black text-slate-900 leading-snug">
               Nombre Producto
             </h2>
 
             <div class="mt-3 flex items-baseline gap-2">
-              <span id="detailModalPrice" class="text-2xl font-black text-brand-600">
+              <span id="detailModalPrice" class="text-2xl sm:text-3xl font-black text-brand-600">
                 $0
               </span>
               <span id="detailModalOriginalPrice" class="text-sm font-semibold text-slate-400 line-through hidden">
@@ -917,23 +987,23 @@
 
             <div class="mt-4 border-t border-slate-100 pt-3">
               <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Descripción</h4>
-              <p id="detailModalDescription" class="text-xs text-slate-600 leading-relaxed max-h-36 overflow-y-auto pr-1">
+              <p id="detailModalDescription" class="text-xs sm:text-sm text-slate-600 leading-relaxed max-h-40 overflow-y-auto pr-1">
                 Descripción detallada...
               </p>
             </div>
           </div>
 
           <!-- Quick Actions in Detail Modal -->
-          <div class="pt-6 space-y-2.5">
+          <div class="pt-5 space-y-2.5">
             <button 
               id="detailModalAddToCartBtn"
-              class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+              class="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-sm active:scale-98"
             >
               <i data-lucide="shopping-cart" class="w-4 h-4"></i> Añadir al Carrito
             </button>
             <button 
               id="detailModalBuyWhatsAppBtn"
-              class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+              class="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-sm active:scale-98"
             >
               <i data-lucide="message-circle" class="w-4 h-4"></i> Comprar directo por WhatsApp
             </button>
@@ -944,14 +1014,100 @@
             >
               <i data-lucide="edit-3" class="w-4 h-4 text-brand-600"></i> Editar este Producto
             </button>
+            
+            <!-- Bottom Close Button (Extra handy on mobile when scrolled down) -->
+            <button 
+              type="button" 
+              onclick="closeProductDetailModal()" 
+              class="w-full py-2.5 px-4 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 border border-slate-200/70"
+            >
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Volver a la Tienda (Cerrar)
+            </button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- ================= FULLSCREEN LIGHTBOX (VISOR DE PANTALLA COMPLETA) ================= -->
+  <div id="fullscreenImageLightbox" class="fixed inset-0 z-[150] hidden bg-slate-950/95 backdrop-blur-md flex flex-col justify-between p-3 sm:p-6 animate-fade-in select-none">
+    
+    <!-- Top Control Bar -->
+    <div class="flex items-center justify-between w-full max-w-6xl mx-auto z-10 py-1">
+      <button 
+        type="button" 
+        onclick="closeFullscreenLightbox()" 
+        class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm flex items-center gap-2 backdrop-blur-sm transition-all border border-white/15 active:scale-95 shadow-lg"
+        title="Volver a la tarjeta del producto"
+      >
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span>Volver al Producto</span>
+      </button>
+
+      <!-- Product Name in Fullscreen -->
+      <span id="lightboxProductName" class="text-xs sm:text-sm font-bold text-white/80 truncate max-w-[180px] sm:max-w-md hidden md:inline text-center">
+        Nombre del Producto
+      </span>
+
+      <div class="flex items-center gap-3">
+        <!-- Photo Counter -->
+        <span id="lightboxPhotoCounter" class="px-3 py-1 rounded-full bg-white/10 text-white text-xs font-extrabold backdrop-blur-sm border border-white/15">
+          1 / 1
+        </span>
+
+        <!-- Close X Button -->
+        <button 
+          type="button" 
+          onclick="closeFullscreenLightbox()" 
+          class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all border border-white/15 active:scale-95 shadow-lg"
+          title="Cerrar pantalla completa (Esc)"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Fullscreen Stage (Center) -->
+    <div class="relative flex-1 flex items-center justify-center w-full max-w-6xl mx-auto overflow-hidden my-2">
+      <img id="lightboxMainImage" src="" alt="Fullscreen Preview" class="max-h-[68vh] sm:max-h-[76vh] max-w-full object-contain rounded-2xl shadow-2xl transition-all duration-200">
+      
+      <!-- Prev Button -->
+      <button 
+        id="lightboxPrevBtn"
+        type="button" 
+        onclick="prevLightboxImage(); event.stopPropagation();" 
+        class="hidden absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-slate-900/75 hover:bg-slate-900 text-white flex items-center justify-center backdrop-blur-md transition-all border border-white/20 hover:scale-110 active:scale-95 shadow-xl z-20"
+        title="Foto anterior (Flecha Izquierda)"
+      >
+        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+      </button>
+
+      <!-- Next Button -->
+      <button 
+        id="lightboxNextBtn"
+        type="button" 
+        onclick="nextLightboxImage(); event.stopPropagation();" 
+        class="hidden absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-slate-900/75 hover:bg-slate-900 text-white flex items-center justify-center backdrop-blur-md transition-all border border-white/20 hover:scale-110 active:scale-95 shadow-xl z-20"
+        title="Siguiente foto (Flecha Derecha)"
+      >
+        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+      </button>
+    </div>
+
+    <!-- Bottom Strip of Thumbnails (Jump between photos of the same product) -->
+    <div class="w-full max-w-6xl mx-auto z-10 flex flex-col items-center gap-2 pb-1">
+      <div id="lightboxThumbnailsStrip" class="flex items-center gap-2 overflow-x-auto max-w-full p-1 scrollbar-none">
+        <!-- Injected Thumbnails -->
+      </div>
+      <p class="text-[11px] text-white/50 text-center hidden sm:block">
+        Toca cualquier miniatura para verla en grande o usa las flechas del teclado (← / →)
+      </p>
+    </div>
+
+  </div>
+
   <!-- ================= SLIDE-OVER / MODAL: SHOPPING CART ================= -->
-  <div id="cartModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex justify-end">
+  <div id="cartModal" onclick="if(event.target === this) closeCartModal()" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex justify-end">
     <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-slide-left">
       
       <!-- Cart Header -->
@@ -1052,6 +1208,6 @@
   </footer>
 
   <!-- Main JavaScript App -->
-  <script src="js/app.js?v=4.0"></script>
+  <script src="js/app.js?v=7.0"></script>
 </body>
 </html>

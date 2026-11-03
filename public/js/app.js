@@ -175,6 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initStoreData();
   renderApp();
   updateAdminUIState();
+  initImageZoomLoupe();
   lucide.createIcons();
 
   // Soporte de enlace directo para modo desarrolladora/administradora
@@ -366,11 +367,68 @@ function renderApp() {
   if (heroBadge) {
     heroBadge.innerHTML = `<i data-lucide="sparkles" class="w-3.5 h-3.5"></i> ${state.settings.bannerBadge || 'Catálogo Completo 2026'}`;
   }
-  if (heroSection) {
-    if (state.settings.bannerBgImage) {
-      heroSection.style.backgroundImage = `url('${state.settings.bannerBgImage}')`;
-    } else {
-      heroSection.style.backgroundImage = '';
+  // Update Hero Banner Background (Video or Image)
+  const heroVideo = document.getElementById('heroBgVideo');
+  const heroVideoSource = document.getElementById('heroBgVideoSource');
+  if (state.settings.bannerBgVideo && state.settings.bannerBgVideo.trim()) {
+    const videoUrl = state.settings.bannerBgVideo.trim();
+    if (heroVideo) {
+      // Ensure all mobile autoplay requirements are programmatically set:
+      heroVideo.muted = true;
+      heroVideo.defaultMuted = true;
+      heroVideo.playsInline = true;
+      heroVideo.loop = true;
+      heroVideo.setAttribute('muted', '');
+      heroVideo.setAttribute('playsinline', '');
+      heroVideo.setAttribute('webkit-playsinline', '');
+
+      // Set src directly on video element for 100% browser compatibility
+      if (heroVideo.src !== videoUrl && !heroVideo.src.endsWith(videoUrl)) {
+        heroVideo.src = videoUrl;
+        if (heroVideoSource) heroVideoSource.src = videoUrl;
+        heroVideo.load();
+      }
+      heroVideo.classList.remove('hidden');
+
+      // Attempt immediate play
+      const tryPlay = () => {
+        heroVideo.play().catch(() => {
+          // Retry on first user tap/scroll/touch
+          const onFirstInteraction = () => {
+            heroVideo.play().catch(() => {});
+            document.removeEventListener('touchstart', onFirstInteraction);
+            document.removeEventListener('click', onFirstInteraction);
+            document.removeEventListener('scroll', onFirstInteraction);
+          };
+          document.addEventListener('touchstart', onFirstInteraction, { once: true, passive: true });
+          document.addEventListener('click', onFirstInteraction, { once: true, passive: true });
+          document.addEventListener('scroll', onFirstInteraction, { once: true, passive: true });
+        });
+      };
+      tryPlay();
+
+      // Fallback if video fails to load (e.g. file missing or 404)
+      heroVideo.onerror = () => {
+        console.warn('Hero video failed to load, falling back to background image.');
+        heroVideo.classList.add('hidden');
+        if (heroSection && state.settings.bannerBgImage) {
+          heroSection.style.backgroundImage = `url('${state.settings.bannerBgImage}')`;
+        }
+      };
+    }
+    if (heroSection) heroSection.style.backgroundImage = '';
+  } else {
+    if (heroVideo) {
+      heroVideo.pause();
+      heroVideo.src = '';
+      heroVideo.classList.add('hidden');
+    }
+    if (heroSection) {
+      if (state.settings.bannerBgImage) {
+        heroSection.style.backgroundImage = `url('${state.settings.bannerBgImage}')`;
+      } else {
+        heroSection.style.backgroundImage = '';
+      }
     }
   }
 
@@ -1107,11 +1165,14 @@ function openProductModal(productId = null) {
 
   renderModalImagesGallery();
   modal.classList.remove('hidden');
+  modal.scrollTop = 0;
+  document.body.classList.add('overflow-hidden');
   lucide.createIcons();
 }
 
 function closeProductModal() {
   document.getElementById('productModal').classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
   state.selectedImages = [];
   state.editingProductId = null;
   const fileInput = document.getElementById('productImageInput');
@@ -1729,6 +1790,39 @@ function populateSettingsForm() {
   if (bannerTextInput) bannerTextInput.value = state.settings.bannerText || state.settings.storeSlogan || '';
   if (bannerBadgeInput) bannerBadgeInput.value = state.settings.bannerBadge || 'Catálogo Completo 2026';
   
+  // Hero Banner Video Preview
+  const bannerVideoContainer = document.getElementById('settingBannerVideoContainer');
+  const bannerVideoPreview = document.getElementById('settingBannerVideoPreview');
+  const bannerVideoPreviewSource = document.getElementById('settingBannerVideoPreviewSource');
+  const bannerVideoUrlInput = document.getElementById('settingBannerBgVideoUrl');
+  const btnRemoveBannerVideo = document.getElementById('btnRemoveBannerVideo');
+
+  if (state.settings.bannerBgVideo) {
+    if (bannerVideoContainer && bannerVideoPreview) {
+      bannerVideoPreview.muted = true;
+      bannerVideoPreview.defaultMuted = true;
+      bannerVideoPreview.playsInline = true;
+      bannerVideoPreview.loop = true;
+      if (bannerVideoPreview.src !== state.settings.bannerBgVideo && !bannerVideoPreview.src.endsWith(state.settings.bannerBgVideo)) {
+        bannerVideoPreview.src = state.settings.bannerBgVideo;
+        bannerVideoPreview.load();
+      }
+      bannerVideoContainer.classList.remove('hidden');
+      bannerVideoPreview.play().catch(() => {});
+    }
+    if (btnRemoveBannerVideo) btnRemoveBannerVideo.classList.remove('hidden');
+    if (bannerVideoUrlInput) bannerVideoUrlInput.value = state.settings.bannerBgVideo;
+  } else {
+    if (bannerVideoContainer && bannerVideoPreview) {
+      bannerVideoPreview.pause();
+      bannerVideoPreview.src = '';
+      bannerVideoContainer.classList.add('hidden');
+    }
+    if (btnRemoveBannerVideo) btnRemoveBannerVideo.classList.add('hidden');
+    if (bannerVideoUrlInput) bannerVideoUrlInput.value = '';
+  }
+
+  // Hero Banner Background Image
   if (state.settings.bannerBgImage) {
     if (bannerPreviewContainer) {
       bannerPreviewContainer.style.backgroundImage = `url('${state.settings.bannerBgImage}')`;
@@ -1818,6 +1912,102 @@ async function handleBannerBgFileSelected(input) {
   }
 }
 
+// Video Background Handlers
+async function handleBannerVideoFileSelected(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+
+    // Check size limit (limit to 50MB for smooth playback and cloud hosting)
+    if (file.size > 50 * 1024 * 1024) {
+      Swal.fire('Video muy pesado', 'Por favor selecciona un video menor a 50MB para que tu tienda cargue rápido.', 'warning');
+      return;
+    }
+
+    Swal.fire({
+      title: 'Cargando video...',
+      text: 'Procesando el video para la franja dinámica.',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result;
+      if (state.isServerConnected) {
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ filename: 'video_' + file.name, data: base64 })
+          });
+          const d = await res.json();
+          state.settings.bannerBgVideo = d.url;
+        } catch (err) {
+          state.settings.bannerBgVideo = base64;
+        }
+      } else {
+        state.settings.bannerBgVideo = base64;
+      }
+
+      Swal.close();
+      populateSettingsForm();
+      renderApp();
+      Swal.fire({
+        icon: 'success',
+        title: '¡Video de Portada Cargado!',
+        text: 'Presiona "Guardar Configuración" para confirmar los cambios.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function handleBannerVideoUrlInput(url) {
+  state.settings.bannerBgVideo = url.trim();
+  const bannerVideoContainer = document.getElementById('settingBannerVideoContainer');
+  const bannerVideoPreview = document.getElementById('settingBannerVideoPreview');
+  const btnRemoveBannerVideo = document.getElementById('btnRemoveBannerVideo');
+
+  if (url.trim()) {
+    if (bannerVideoContainer && bannerVideoPreview) {
+      bannerVideoPreview.muted = true;
+      bannerVideoPreview.defaultMuted = true;
+      bannerVideoPreview.playsInline = true;
+      bannerVideoPreview.src = url.trim();
+      bannerVideoPreview.load();
+      bannerVideoContainer.classList.remove('hidden');
+      bannerVideoPreview.play().catch(() => {});
+    }
+    if (btnRemoveBannerVideo) btnRemoveBannerVideo.classList.remove('hidden');
+  } else {
+    removeSettingBannerVideo();
+  }
+  renderApp();
+}
+
+function removeSettingBannerVideo() {
+  state.settings.bannerBgVideo = '';
+  populateSettingsForm();
+  renderApp();
+}
+
+function useSampleBannerVideo() {
+  // High quality sample commerce/tech background video from Mixkit
+  const sampleUrl = 'https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-man-wearing-a-smart-watch-41133-large.mp4';
+  state.settings.bannerBgVideo = sampleUrl;
+  populateSettingsForm();
+  renderApp();
+  Swal.fire({
+    icon: 'success',
+    title: '¡Video Demo Aplicado!',
+    text: 'Mira la franja superior en tu tienda para ver cómo cobra vida. Si te gusta, haz clic en "Guardar Configuración".',
+    timer: 2500,
+    showConfirmButton: false
+  });
+}
+
 function handleBannerBgUrlInput(url) {
   state.settings.bannerBgImage = url.trim();
   populateSettingsForm();
@@ -1838,6 +2028,16 @@ async function handleSaveSettings(e) {
   state.settings.bannerTitle = document.getElementById('settingBannerTitle').value.trim();
   state.settings.bannerText = document.getElementById('settingBannerText').value.trim();
   state.settings.bannerBadge = document.getElementById('settingBannerBadge').value.trim();
+
+  const videoUrlInput = document.getElementById('settingBannerBgVideoUrl');
+  if (videoUrlInput) {
+    state.settings.bannerBgVideo = videoUrlInput.value.trim();
+  }
+
+  const bgImgUrlInput = document.getElementById('settingBannerBgUrl');
+  if (bgImgUrlInput) {
+    state.settings.bannerBgImage = bgImgUrlInput.value.trim();
+  }
 
   const pinInput = document.getElementById('settingAdminPin');
   if (pinInput && pinInput.value.trim()) {
@@ -1946,6 +2146,8 @@ function openProductDetail(productId) {
   }
 
   modal.classList.remove('hidden');
+  modal.scrollTop = 0;
+  document.body.classList.add('overflow-hidden');
   lucide.createIcons();
 }
 
@@ -1955,6 +2157,8 @@ function renderDetailGallery() {
   const nextBtn = document.getElementById('detailNextImageBtn');
   const counter = document.getElementById('detailPhotoCounter');
   const thumbnails = document.getElementById('detailThumbnailsStrip');
+  const loupe = document.getElementById('imageZoomLoupe');
+  if (loupe) loupe.classList.add('hidden');
 
   const total = state.activeDetailImages.length;
   const currentSrc = state.activeDetailImages[state.activeDetailIndex] || '';
@@ -2013,6 +2217,259 @@ function nextDetailImage() {
 
 function closeProductDetailModal() {
   document.getElementById('productDetailModal').classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
+  const loupe = document.getElementById('imageZoomLoupe');
+  if (loupe) loupe.classList.add('hidden');
+  closeFullscreenLightbox();
+}
+
+function handleImageContainerClick(e) {
+  // Si se hizo clic en las flechas prev/next del carrusel, no abrir pantalla completa
+  if (e.target.closest('#detailPrevImageBtn') || e.target.closest('#detailNextImageBtn')) {
+    return;
+  }
+  openFullscreenLightbox();
+}
+
+// ==========================================
+// FULLSCREEN IMAGE LIGHTBOX (VISOR PANTALLA COMPLETA)
+// ==========================================
+let lightboxTouchStartX = 0;
+let lightboxTouchEndX = 0;
+
+function openFullscreenLightbox() {
+  const lightbox = document.getElementById('fullscreenImageLightbox');
+  if (!lightbox) return;
+
+  const loupe = document.getElementById('imageZoomLoupe');
+  if (loupe) loupe.classList.add('hidden');
+
+  const prodNameEl = document.getElementById('detailModalName');
+  const lightboxProdName = document.getElementById('lightboxProductName');
+  if (lightboxProdName && prodNameEl) {
+    lightboxProdName.innerText = prodNameEl.innerText;
+  }
+
+  lightbox.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+
+  renderLightboxView();
+  lucide.createIcons();
+
+  // Soporte de deslizamiento táctil en celular (Swipe)
+  if (!lightbox.dataset.swipeInitialized) {
+    lightbox.dataset.swipeInitialized = 'true';
+    lightbox.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length === 1) {
+        lightboxTouchStartX = e.touches[0].clientX;
+      }
+    }, { passive: true });
+
+    lightbox.addEventListener('touchend', (e) => {
+      if (e.changedTouches && e.changedTouches.length === 1) {
+        lightboxTouchEndX = e.changedTouches[0].clientX;
+        handleLightboxSwipe();
+      }
+    }, { passive: true });
+  }
+}
+
+function handleLightboxSwipe() {
+  const diff = lightboxTouchStartX - lightboxTouchEndX;
+  if (Math.abs(diff) > 40) {
+    if (diff > 0) {
+      nextLightboxImage(); // Deslizar izquierda -> siguiente foto
+    } else {
+      prevLightboxImage(); // Deslizar derecha -> foto anterior
+    }
+  }
+}
+
+function renderLightboxView() {
+  const img = document.getElementById('lightboxMainImage');
+  const prevBtn = document.getElementById('lightboxPrevBtn');
+  const nextBtn = document.getElementById('lightboxNextBtn');
+  const counter = document.getElementById('lightboxPhotoCounter');
+  const thumbnails = document.getElementById('lightboxThumbnailsStrip');
+
+  const images = state.activeDetailImages || [];
+  const total = images.length;
+  const currentSrc = images[state.activeDetailIndex] || '';
+
+  if (img) img.src = currentSrc;
+  if (counter) counter.innerText = `${state.activeDetailIndex + 1} / ${total || 1}`;
+
+  if (total > 1) {
+    if (prevBtn) prevBtn.classList.remove('hidden');
+    if (nextBtn) nextBtn.classList.remove('hidden');
+    if (counter) counter.classList.remove('hidden');
+
+    if (thumbnails) {
+      thumbnails.classList.remove('hidden');
+      thumbnails.innerHTML = images.map((src, idx) => `
+        <div 
+          onclick="switchLightboxImage(${idx})"
+          class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 cursor-pointer flex-shrink-0 bg-black/50 transition-all ${
+            idx === state.activeDetailIndex 
+              ? 'border-brand-500 ring-2 ring-brand-400 scale-105 opacity-100 shadow-lg' 
+              : 'border-white/20 opacity-50 hover:opacity-100'
+          }"
+        >
+          <img src="${src}" alt="" class="w-full h-full object-cover">
+        </div>
+      `).join('');
+    }
+  } else {
+    if (prevBtn) prevBtn.classList.add('hidden');
+    if (nextBtn) nextBtn.classList.add('hidden');
+    if (thumbnails) thumbnails.innerHTML = '';
+  }
+}
+
+function switchLightboxImage(idx) {
+  if (idx >= 0 && idx < state.activeDetailImages.length) {
+    state.activeDetailIndex = idx;
+    renderLightboxView();
+    renderDetailGallery(); // Sincroniza la tarjeta en segundo plano
+  }
+}
+
+function prevLightboxImage() {
+  const total = state.activeDetailImages.length;
+  if (total <= 1) return;
+  state.activeDetailIndex = (state.activeDetailIndex - 1 + total) % total;
+  renderLightboxView();
+  renderDetailGallery();
+}
+
+function nextLightboxImage() {
+  const total = state.activeDetailImages.length;
+  if (total <= 1) return;
+  state.activeDetailIndex = (state.activeDetailIndex + 1) % total;
+  renderLightboxView();
+  renderDetailGallery();
+}
+
+function closeFullscreenLightbox() {
+  const lightbox = document.getElementById('fullscreenImageLightbox');
+  if (lightbox) lightbox.classList.add('hidden');
+  renderDetailGallery(); // Refresca la foto activa en la tarjeta
+  lucide.createIcons();
+}
+
+// Navegación por teclado (Flechas para fotos, Escape para cerrar)
+document.addEventListener('keydown', (e) => {
+  const lightbox = document.getElementById('fullscreenImageLightbox');
+  const isLightboxOpen = lightbox && !lightbox.classList.contains('hidden');
+
+  if (isLightboxOpen) {
+    if (e.key === 'Escape') closeFullscreenLightbox();
+    else if (e.key === 'ArrowLeft') prevLightboxImage();
+    else if (e.key === 'ArrowRight') nextLightboxImage();
+    return;
+  }
+
+  if (e.key === 'Escape') {
+    closeProductDetailModal();
+    if (typeof closeCartModal === 'function') closeCartModal();
+    if (typeof closeProductModal === 'function') closeProductModal();
+  }
+});
+
+// ==========================================
+// INTERACTIVE IMAGE ZOOM LOUPE (MAGNIFYING GLASS)
+// ==========================================
+function initImageZoomLoupe() {
+  const container = document.getElementById('detailImageContainer');
+  const img = document.getElementById('detailModalImage');
+  const loupe = document.getElementById('imageZoomLoupe');
+  if (!container || !img || !loupe) return;
+
+  const ZOOM_LEVEL = 2.4; // Factor de aumento 2.4x
+
+  function updateLoupe(clientX, clientY, isTouch = false) {
+    if (!img.src || img.naturalWidth === 0) return;
+
+    const imgRect = img.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Comprobar si el cursor o dedo está sobre la imagen visible
+    if (
+      clientX < imgRect.left || clientX > imgRect.right ||
+      clientY < imgRect.top || clientY > imgRect.bottom
+    ) {
+      loupe.classList.add('hidden');
+      return;
+    }
+
+    loupe.classList.remove('hidden');
+
+    const loupeWidth = loupe.offsetWidth || 150;
+    const loupeHeight = loupe.offsetHeight || 150;
+
+    // Coordenadas relativas a la imagen real
+    const imgX = clientX - imgRect.left;
+    const imgY = clientY - imgRect.top;
+
+    // Coordenadas relativas al contenedor
+    const containerX = clientX - containerRect.left;
+    const containerY = clientY - containerRect.top;
+
+    // Posición centrada en el cursor
+    let loupeLeft = containerX - (loupeWidth / 2);
+    let loupeTop = containerY - (loupeHeight / 2);
+
+    // En celular (pantalla táctil), elevar la lupa 25px por encima del dedo para que el pulgar no la tape
+    if (isTouch) {
+      loupeTop = containerY - loupeHeight - 25;
+      if (loupeTop < 5) {
+        loupeTop = containerY + 25; // Si está muy arriba, colocarla abajo del dedo
+      }
+    }
+
+    // Mantener la lupa dentro de los bordes del recuadro
+    loupeLeft = Math.max(0, Math.min(containerRect.width - loupeWidth, loupeLeft));
+    loupeTop = Math.max(0, Math.min(containerRect.height - loupeHeight, loupeTop));
+
+    loupe.style.left = `${loupeLeft}px`;
+    loupe.style.top = `${loupeTop}px`;
+
+    // Configurar imagen de fondo con zoom nítido
+    loupe.style.backgroundImage = `url("${img.src}")`;
+    loupe.style.backgroundSize = `${imgRect.width * ZOOM_LEVEL}px ${imgRect.height * ZOOM_LEVEL}px`;
+
+    const bgX = (imgX * ZOOM_LEVEL) - (loupeWidth / 2);
+    const bgY = (imgY * ZOOM_LEVEL) - (loupeHeight / 2);
+
+    loupe.style.backgroundPosition = `-${bgX}px -${bgY}px`;
+  }
+
+  function hideLoupe() {
+    loupe.classList.add('hidden');
+  }
+
+  // Eventos de ratón (Computadora)
+  container.addEventListener('mousemove', (e) => {
+    updateLoupe(e.clientX, e.clientY, false);
+  });
+  container.addEventListener('mouseleave', hideLoupe);
+
+  // Eventos táctiles (Celular)
+  container.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length === 1) {
+      updateLoupe(e.touches[0].clientX, e.touches[0].clientY, true);
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches.length === 1) {
+      if (e.cancelable) e.preventDefault();
+      updateLoupe(e.touches[0].clientX, e.touches[0].clientY, true);
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchend', hideLoupe);
+  container.addEventListener('touchcancel', hideLoupe);
 }
 
 // ==========================================
@@ -2096,11 +2553,14 @@ function openCartModal() {
   const modal = document.getElementById('cartModal');
   renderCartItems();
   modal.classList.remove('hidden');
+  modal.scrollTop = 0;
+  document.body.classList.add('overflow-hidden');
   lucide.createIcons();
 }
 
 function closeCartModal() {
   document.getElementById('cartModal').classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
 }
 
 function renderCartItems() {
