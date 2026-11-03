@@ -81,7 +81,11 @@ const MIME_TYPES = {
   '.gif': 'image/gif',
   '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon'
+  '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  '.ogg': 'video/ogg'
 };
 
 // -------------------------------------------------------------
@@ -547,23 +551,27 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // Helper to save a single base64 image
+  // Helper to save a single base64 image or video
   function saveBase64Image(data, filename) {
-    const matches = data.match(/^data:image\/([a-zA-Z0-9.+]+);base64,(.+)$/);
+    const imgMatches = data.match(/^data:image\/([a-zA-Z0-9.+]+);base64,(.+)$/);
+    const videoMatches = data.match(/^data:video\/([a-zA-Z0-9.+]+);base64,(.+)$/);
     let buffer;
     let ext = '.jpg';
 
-    if (matches) {
-      ext = '.' + matches[1].replace('jpeg', 'jpg');
-      buffer = Buffer.from(matches[2], 'base64');
+    if (imgMatches) {
+      ext = '.' + imgMatches[1].replace('jpeg', 'jpg');
+      buffer = Buffer.from(imgMatches[2], 'base64');
+    } else if (videoMatches) {
+      ext = '.' + videoMatches[1].replace('quicktime', 'mov');
+      buffer = Buffer.from(videoMatches[2], 'base64');
     } else {
-      buffer = Buffer.from(data, 'base64');
+      buffer = Buffer.from(data.replace(/^data:[^;]+;base64,/, ''), 'base64');
       if (filename && path.extname(filename)) {
         ext = path.extname(filename);
       }
     }
 
-    const safeBaseName = (filename ? path.basename(filename, path.extname(filename)) : 'prod')
+    const safeBaseName = (filename ? path.basename(filename, path.extname(filename)) : 'media')
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .substring(0, 30);
 
@@ -878,8 +886,28 @@ const server = http.createServer(async (req, res) => {
     const ext = path.extname(normalizedPath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
+    // HTTP 206 Partial Content (Range) support for video streaming
+    const range = req.headers.range;
+    if (range && (ext === '.mp4' || ext === '.webm' || ext === '.mov' || ext === '.ogg')) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+      const chunksize = (end - start) + 1;
+      const file = fs.createReadStream(normalizedPath, { start, end });
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': contentType,
+        'Cache-Control': 'no-cache'
+      });
+      return file.pipe(res);
+    }
+
     res.writeHead(200, {
       'Content-Type': contentType,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': stats.size,
       'Cache-Control': 'no-cache, no-store, must-revalidate'
     });
     fs.createReadStream(normalizedPath).pipe(res);

@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50 text-slate-800 antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAO STORE - Tu Tienda Online Oficial</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              950: '#1e1b4b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css?v=3.0">
+</head>
+<body class="min-h-full flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+
+  <!-- ================= TOP ANNOUNCEMENT BAR ================= -->
+  <div class="bg-slate-900 text-slate-200 text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-3">
+    <span class="inline-flex items-center gap-1.5">
+      <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+      ¡Envíos rápidos y seguros a todo el país!
+    </span>
+    <span class="hidden sm:inline text-slate-500">•</span>
+    <span class="hidden sm:inline-flex items-center gap-1 text-slate-300">
+      <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+      Garantía de satisfacción directa
+    </span>
+  </div>
+
+  <!-- ================= HEADER & NAVIGATION ================= -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 transition-all shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20 gap-4">
+        
+        <!-- Logo Brand -->
+        <a href="#" onclick="switchView('store'); return false;" class="flex items-center gap-3 group">
+          <div id="navLogoContainer" class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform overflow-hidden p-0.5 border border-slate-200/50">
+            <i id="navDefaultIcon" data-lucide="shopping-bag" class="w-6 h-6 text-white"></i>
+            <img id="navCustomLogo" src="" alt="Logo" class="w-full h-full object-contain rounded-xl hidden">
+          </div>
+          <div>
+            <div class="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5" id="navStoreName">
+              <span>MAO</span><span class="text-brand-600">STORE</span>
+            </div>
+            <p class="text-[11px] text-slate-400 font-medium tracking-wider uppercase -mt-1" id="navSlogan">Tienda Oficial</p>
+          </div>
+        </a>
+
+        <!-- Live Search Bar -->
+        <div class="flex-1 max-w-lg hidden md:block">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input 
+              type="text" 
+              id="searchInput" 
+              placeholder="Buscar por nombre, categoría o descripción..."
+              class="w-full bg-slate-100 hover:bg-slate-50 focus:bg-white text-sm text-slate-800 placeholder-slate-400 pl-10 pr-10 py-2.5 rounded-full border border-transparent focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none"
+              oninput="handleSearch(this.value)"
+            >
+            <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Action Buttons -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          
+          <!-- Creator Controls (Hidden for Clients by Default) -->
+          <div id="creatorControlsNav" class="hidden items-center gap-1.5 sm:gap-2">
+            <button 
+              id="adminToggleBtn"
+              onclick="toggleAdminView()"
+              class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold rounded-xl border border-brand-200 text-brand-700 bg-brand-50 hover:bg-brand-100 transition-all shadow-sm"
+              title="Panel de control del creador"
+            >
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="adminToggleText">Panel Creador</span>
+            </button>
+            <button 
+              onclick="logoutAdmin()"
+              class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+              title="Cerrar Modo Creador (Ver como cliente)"
+            >
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Shopping Cart Button -->
+          <button 
+            onclick="openCartModal()" 
+            class="relative inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm hover:shadow"
+            title="Ver carrito de compras"
+          >
+            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Carrito</span>
+            <span id="cartCountBadge" class="bg-brand-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+              0
+            </span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Mobile Search Bar -->
+      <div class="md:hidden pb-3">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input 
+            type="text" 
+            id="searchInputMobile" 
+            placeholder="Buscar productos..."
+            class="w-full bg-slate-100 text-sm text-slate-800 placeholder-slate-400 pl-10 pr-4 py-2 rounded-xl border border-transparent focus:border-brand-500 outline-none"
+            oninput="handleSearch(this.value)"
+          >
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT VIEWS ================= -->
+  <main class="flex-1">
+
+    <!-- ---------------------------------------------------- -->
+    <!-- VIEW 1: STORE FRONT (TIENDA PARA CLIENTES)          -->
+    <!-- ---------------------------------------------------- -->
+    <div id="storeView" class="block">
+      
+      <!-- Hero Banner Section -->
+      <section id="heroBannerSection" class="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white overflow-hidden py-14 sm:py-20 transition-all duration-500 bg-cover bg-center min-h-[220px]">
+        <!-- Dynamic Video Background -->
+        <video id="heroBgVideo" autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover z-0 hidden pointer-events-none transition-opacity duration-700">
+          <source id="heroBgVideoSource" src="" type="video/mp4">
+        </video>
+        <!-- Overlay for contrast and readability -->
+        <div id="heroBgOverlay" class="absolute inset-0 bg-slate-950/65 z-0 transition-colors"></div>
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:16px_16px] z-0"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div class="max-w-2xl">
+            <span id="heroBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 mb-4">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Catálogo Completo 2026
+            </span>
+            <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight" id="heroTitle">
+              Bienvenido a <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-indigo-200 to-white">MAO STORE</span>
+            </h1>
+            <p class="mt-3 text-base sm:text-lg text-slate-300 max-w-xl font-normal leading-relaxed" id="heroSlogan">
+              Explora nuestra selección exclusiva de productos de la mejor calidad. Filtra por categorías, sube nuevos artículos y haz tus pedidos al instante.
+            </p>
+            <div class="mt-6 flex flex-wrap items-center gap-3">
+              <a href="#catalogo" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/25">
+                <i data-lucide="grid" class="w-4 h-4"></i> Explorar Catálogo
+              </a>
+              <button onclick="contactWhatsAppDirect()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors shadow-lg shadow-emerald-600/20">
+                <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp Directo
+              </button>
+              <button id="heroCreatorUploadBtn" onclick="openProductModal()" class="hidden inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/10 transition-colors">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i> Subir Mi Producto
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Store Catalog Section -->
+      <section id="catalogo" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        
+        <!-- Category Filter Chips -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-4 h-4 text-brand-500"></i> Filtrar por Categoría
+            </h2>
+            <button id="storeManageCategoriesBtn" onclick="openCategoryModal()" class="hidden text-xs font-semibold text-brand-600 hover:text-brand-700 items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Gestionar Categorías
+            </button>
+          </div>
+          
+          <div id="categoryChipsContainer" class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <!-- Dynamic Category Pills Rendered here -->
+          </div>
+        </div>
+
+        <!-- Filter & Sorting Bar -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-200">
+          <div>
+            <h3 class="text-xl font-extrabold text-slate-900 tracking-tight" id="activeCategoryTitle">
+              Todos los Productos
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5" id="productsCountText">
+              Cargando productos...
+            </p>
+          </div>
+
+          <!-- Sort & Quick Filter -->
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <label for="sortBySelect" class="text-xs font-medium text-slate-500 whitespace-nowrap">Ordenar por:</label>
+              <select 
+                id="sortBySelect" 
+                onchange="handleSort(this.value)"
+                class="bg-white border border-slate-200 text-xs font-semibold text-slate-700 rounded-lg px-3 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 cursor-pointer w-full sm:w-auto"
+              >
+                <option value="recent">Más recientes</option>
+                <option value="price-asc">Precio: Menor a Mayor</option>
+                <option value="price-desc">Precio: Mayor a Menor</option>
+                <option value="name-asc">Nombre (A - Z)</option>
+              </select>
+            </div>
+            
+            <button 
+              id="storeSyncFoldersBtn"
+              onclick="triggerFolderSync()"
+              class="hidden items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors border border-indigo-200 shadow-sm"
+              title="Cargar productos automáticamente desde las carpetas de uploads"
+            >
+              <i data-lucide="folder-sync" class="w-3.5 h-3.5"></i> Sincronizar Carpetas
+            </button>
+            <button 
+              id="storeNewProductBtn"
+              onclick="openProductModal()"
+              class="hidden items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-sm"
+            >
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nuevo Producto
+            </button>
+          </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <!-- Dynamic Product Cards Injected Here -->
+        </div>
+
+        <!-- Empty State (When no products match filters) -->
+        <div id="emptyState" class="hidden py-16 text-center">
+          <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 text-slate-400">
+            <i data-lucide="package-search" class="w-8 h-8"></i>
+          </div>
+          <h4 class="text-lg font-bold text-slate-800">No encontramos productos en esta búsqueda</h4>
+          <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+            Intenta cambiar los filtros, buscar otra palabra clave o agrega un nuevo producto a esta categoría.
+          </p>
+          <div class="mt-5 flex items-center justify-center gap-3">
+            <button onclick="resetFilters()" class="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">
+              Restablecer Filtros
+            </button>
+            <button onclick="openProductModal()" class="px-4 py-2 text-xs font-bold text-white bg-brand-600 rounded-lg hover:bg-brand-700">
+              + Subir Producto
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- VIEW 2: ADMIN MANAGEMENT PANEL (PANEL DE CONTROL)    -->
+    <!-- ---------------------------------------------------- -->
+    <div id="adminView" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-200">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-md bg-brand-100 text-brand-700">
+              Panel Administrativo
+            </span>
+            <span id="backendStatusBadge" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-100 text-emerald-800">
+              ● Servidor Conectado
+            </span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+            Gestión de MAO STORE
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Sube nuevos productos, administra el inventario, gestiona categorías y configura tu tienda.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="triggerFolderSync()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm" title="Escanear carpetas de uploads y cargar productos automáticamente">
+            <i data-lucide="folder-sync" class="w-4 h-4"></i> Sincronizar Carpetas
+          </button>
+          <button onclick="switchView('store')" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700">
+            <i data-lucide="store" class="w-4 h-4"></i> Volver a la Tienda
+          </button>
+          <button onclick="openProductModal()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Subir Producto
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin Tabs Navigation -->
+      <div class="flex border-b border-slate-200 mb-6 space-x-6 text-sm font-semibold">
+        <button onclick="switchAdminTab('products')" id="tabBtnProducts" class="tab-btn active pb-3 text-brand-600 border-b-2 border-brand-600 flex items-center gap-2">
+          <i data-lucide="package" class="w-4 h-4"></i> Productos (<span id="adminProductsCount">0</span>)
+        </button>
+        <button onclick="switchAdminTab('categories')" id="tabBtnCategories" class="tab-btn pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2">
+          <i data-lucide="folder-tree" class="w-4 h-4"></i> Categorías (<span id="adminCategoriesCount">0</span>)
+        </button>
+        <button onclick="switchAdminTab('settings')" id="tabBtnSettings" class="tab-btn pb-3 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2">
+          <i data-lucide="sliders" class="w-4 h-4"></i> Configuración Tienda
+        </button>
+        <button onclick="switchAdminTab('facebook')" id="tabBtnFacebook" class="tab-btn pb-3 text-slate-500 hover:text-blue-600 border-b-2 border-transparent flex items-center gap-2">
+          <i data-lucide="share-2" class="w-4 h-4 text-blue-600"></i> Importar de Facebook
+        </button>
+      </div>
+
+      <!-- Admin Tab: Products Table -->
+      <div id="adminTabProducts" class="block">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+            <div class="relative w-full sm:w-72">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+              <input 
+                type="text" 
+                id="adminSearchInput" 
+                placeholder="Filtrar en inventario..." 
+                class="w-full text-xs pl-9 pr-3 py-2 bg-white rounded-lg border border-slate-200 outline-none focus:border-brand-500"
+                oninput="renderAdminProducts(this.value)"
+              >
+            </div>
+            <div class="text-xs text-slate-500 font-medium">
+              Total de productos registrados: <strong class="text-slate-800" id="adminTotalProductsVal">0</strong>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200">
+                  <th class="py-3 px-4">Producto</th>
+                  <th class="py-3 px-4">Categoría</th>
+                  <th class="py-3 px-4">Precio</th>
+                  <th class="py-3 px-4">Stock</th>
+                  <th class="py-3 px-4">Estado</th>
+                  <th class="py-3 px-4 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="adminProductsTableBody" class="divide-y divide-slate-100 text-sm">
+                <!-- Admin Table rows rendered here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab: Categories Management -->
+      <div id="adminTabCategories" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- Add Category Card -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="folder-plus" class="w-5 h-5 text-brand-600"></i> Nueva Categoría
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">Crea una categoría para organizar tus productos.</p>
+            
+            <form id="createCategoryForm" onsubmit="handleCreateCategory(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre de la Categoría *</label>
+                <input 
+                  type="text" 
+                  id="newCategoryName" 
+                  required 
+                  placeholder="Ej. Tecnología, Joyería, Ropa..." 
+                  class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-none"
+                >
+              </div>
+              <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs transition-colors shadow-sm">
+                Guardar Categoría
+              </button>
+            </form>
+          </div>
+
+          <!-- Existing Categories List -->
+          <div class="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i> Categorías Existentes
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">Gestiona las categorías visibles en el menú y filtros de la tienda.</p>
+            
+            <div id="adminCategoriesList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Category list items injected here -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Admin Tab: Store Settings -->
+      <div id="adminTabSettings" class="hidden">
+        <div class="max-w-2xl bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
+            <i data-lucide="store" class="w-5 h-5 text-brand-600"></i> Configuración General
+          </h3>
+          <p class="text-xs text-slate-500 mb-6">Personaliza la información de MAO STORE y tus canales de venta.</p>
+
+          <form id="settingsForm" onsubmit="handleSaveSettings(event)" class="space-y-6">
+            
+            <!-- Store Identity -->
+            <div class="space-y-4">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Identidad de la Tienda</h4>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre de la Tienda</label>
+                <input type="text" id="settingStoreName" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none font-bold" required>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Slogan o Lema</label>
+                <input type="text" id="settingStoreSlogan" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none">
+              </div>
+
+              <!-- Store Logo Upload -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <i data-lucide="image" class="w-3.5 h-3.5 text-brand-600"></i> Logo de la Tienda (Opcional)
+                </label>
+                <div class="flex items-center gap-4 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                  <div class="w-14 h-14 rounded-xl border border-slate-200 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+                    <img id="settingLogoPreview" src="" alt="Logo" class="w-full h-full object-contain hidden">
+                    <span id="settingLogoPlaceholder" class="text-xs text-slate-400 font-bold">Sin logo</span>
+                  </div>
+                  <div class="flex-1 space-y-2">
+                    <input type="file" id="settingLogoInput" accept="image/*" class="hidden" onchange="handleLogoFileSelected(this)">
+                    <div class="flex items-center gap-2">
+                      <button type="button" onclick="document.getElementById('settingLogoInput').click()" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-sm">
+                        📁 Subir Logo desde PC
+                      </button>
+                      <button type="button" onclick="removeSettingLogo()" id="btnRemoveLogo" class="px-2.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 text-xs font-bold hidden">
+                        Quitar
+                      </button>
+                    </div>
+                    <input type="text" id="settingLogoUrl" placeholder="O ingresa enlace de imagen..." class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-brand-500 outline-none" oninput="handleLogoUrlInput(this.value)">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hero Banner Customization (Franja Superior) -->
+            <div class="space-y-4 pt-4 border-t border-slate-100">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="layout" class="w-3.5 h-3.5 text-indigo-600"></i> Personalización de la Franja Superior (Hero)
+              </h4>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Título de la Franja</label>
+                <input type="text" id="settingBannerTitle" placeholder="Ej. Bienvenido a MAO STORE" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none font-bold">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Texto Descriptivo de la Franja</label>
+                <textarea id="settingBannerText" rows="2" placeholder="Explora nuestra selección exclusiva de productos..." class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none resize-none"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Texto de la Insignia / Promo</label>
+                <input type="text" id="settingBannerBadge" placeholder="Ej. Catálogo Completo 2026" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none">
+              </div>
+
+              <!-- Banner Background Video (Dynamic) -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span class="flex items-center gap-1.5">
+                    <i data-lucide="video" class="w-3.5 h-3.5 text-indigo-600"></i> Video de Fondo de la Franja (Más Dinámico)
+                  </span>
+                  <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Recomendado</span>
+                </label>
+                <div class="p-3.5 rounded-xl border border-indigo-100 bg-indigo-50/30 space-y-3">
+                  <!-- Video Preview Box -->
+                  <div id="settingBannerVideoContainer" class="w-full h-32 rounded-xl border border-indigo-200 bg-slate-900 relative hidden overflow-hidden shadow-sm">
+                    <video id="settingBannerVideoPreview" autoplay loop muted playsinline class="w-full h-full object-cover">
+                      <source id="settingBannerVideoPreviewSource" src="" type="video/mp4">
+                    </video>
+                    <div class="absolute top-2 left-2">
+                      <span class="text-[10px] font-bold text-white bg-slate-900/80 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Video en reproducción
+                      </span>
+                    </div>
+                  </div>
+
+                  <input type="file" id="settingBannerVideoInput" accept="video/mp4,video/webm,video/ogg,video/quicktime" class="hidden" onchange="handleBannerVideoFileSelected(this)">
+                  
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="document.getElementById('settingBannerVideoInput').click()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-colors">
+                      <i data-lucide="upload" class="w-3.5 h-3.5"></i> Subir Video desde PC (MP4/WebM)
+                    </button>
+                    <button type="button" onclick="useSampleBannerVideo()" class="px-3 py-1.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-50 text-xs font-bold text-indigo-700 shadow-sm flex items-center gap-1.5 transition-colors">
+                      <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Usar Video Demo Moderno
+                    </button>
+                    <button type="button" onclick="removeSettingBannerVideo()" id="btnRemoveBannerVideo" class="px-2.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 text-xs font-bold hidden transition-colors">
+                      Quitar Video
+                    </button>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-500 mb-1">O pega el enlace/URL de un video (MP4):</label>
+                    <input type="text" id="settingBannerBgVideoUrl" placeholder="https://ejemplo.com/video-tienda.mp4" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-200 focus:border-brand-500 outline-none bg-white" oninput="handleBannerVideoUrlInput(this.value)">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Banner Background Image (Fallback / Alternative) -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <i data-lucide="image" class="w-3.5 h-3.5 text-slate-500"></i> Imagen de Fondo de la Franja (Opcional si no usas video)
+                </label>
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
+                  <div id="settingBannerPreviewContainer" class="w-full h-24 rounded-xl border border-slate-200 bg-slate-900 bg-cover bg-center relative hidden overflow-hidden shadow-sm">
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <span class="text-xs font-bold text-white bg-slate-900/80 px-2.5 py-1 rounded-lg">Vista previa de imagen</span>
+                    </div>
+                  </div>
+                  <input type="file" id="settingBannerBgInput" accept="image/*" class="hidden" onchange="handleBannerBgFileSelected(this)">
+                  <div class="flex items-center gap-2">
+                    <button type="button" onclick="document.getElementById('settingBannerBgInput').click()" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-sm">
+                      📁 Subir Imagen desde PC
+                    </button>
+                    <button type="button" onclick="removeSettingBannerBg()" id="btnRemoveBannerBg" class="px-2.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 text-xs font-bold hidden">
+                      Quitar Imagen
+                    </button>
+                  </div>
+                  <input type="text" id="settingBannerBgUrl" placeholder="O ingresa enlace de imagen de fondo..." class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-brand-500 outline-none" oninput="handleBannerBgUrlInput(this.value)">
+                </div>
+              </div>
+            </div>
+
+            <!-- Sales Channels & Currency -->
+            <div class="space-y-4 pt-4 border-t border-slate-100">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Canal de Ventas</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Número de WhatsApp (con código país)</label>
+                  <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">WA</span>
+                    <input type="text" id="settingWhatsapp" placeholder="573026926010" class="w-full text-sm pl-11 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" required>
+                  </div>
+                  <span class="text-[10px] text-slate-400 mt-1 block">Los pedidos de los clientes llegarán a este número.</span>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Símbolo de Moneda</label>
+                  <input type="text" id="settingCurrency" placeholder="$" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Creator Security PIN -->
+            <div class="space-y-4 pt-4 border-t border-slate-100">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> Seguridad y Acceso del Creador
+              </h4>
+              <div class="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Tus clientes en la nube <b>solo pueden ver el catálogo y comprar</b>. Para que nadie más pueda editar la tienda, este PIN es tu llave maestra de creador.
+                </p>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">PIN / Contraseña de Administrador</label>
+                  <input type="text" id="settingAdminPin" placeholder="1234" class="w-full sm:w-64 text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none font-mono font-bold tracking-widest bg-white" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex justify-end">
+              <button type="submit" class="py-2.5 px-6 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs shadow-sm transition-colors">
+                Guardar Configuración
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Admin Tab: Facebook Marketplace Sync -->
+      <div id="adminTabFacebook" class="hidden">
+        <div class="max-w-4xl space-y-6">
+          
+          <!-- Banner Hero -->
+          <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+            <div class="absolute -right-8 -bottom-8 opacity-10 text-white pointer-events-none">
+              <i data-lucide="share-2" class="w-64 h-64"></i>
+            </div>
+            <div class="relative z-10 max-w-2xl">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md mb-3">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-300"></i> Extractor Directo de Marketplace
+              </span>
+              <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight">
+                Importa tus Productos de Facebook a Mao Store
+              </h3>
+              <p class="text-xs sm:text-sm text-blue-100 mt-2 leading-relaxed">
+                Extrae automáticamente todos los artículos publicados en tu cuenta con su <strong>título exacto</strong>, <strong>precio real</strong>, <strong>descripción completa</strong> y <strong>descarga de fotografías en carpetas locales</strong> organizadas.
+              </p>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Interactive Guide -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+            <h4 class="text-base font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-5 h-5 text-indigo-600"></i> Método 1: Extractor Automático en 1 Clic (Recomendado)
+            </h4>
+            <p class="text-xs text-slate-500 mb-6">
+              Como tus publicaciones de Facebook requieren que estés conectado con tu cuenta personal, este script seguro se ejecuta en tu propio navegador y envía las publicaciones directamente a Mao Store.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <!-- Step 1 -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 relative">
+                <div class="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center mb-3">1</div>
+                <h5 class="text-xs font-bold text-slate-900 mb-1">Abre tus Publicaciones</h5>
+                <p class="text-[11px] text-slate-500 mb-3">Ingresa a tu cuenta de Facebook Marketplace en la sección de ventas.</p>
+                <a href="https://www.facebook.com/marketplace/you/selling" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 underline">
+                  Abrir Marketplace <i data-lucide="external-link" class="w-3 h-3"></i>
+                </a>
+              </div>
+
+              <!-- Step 2 -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 relative">
+                <div class="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center mb-3">2</div>
+                <h5 class="text-xs font-bold text-slate-900 mb-1">Abre la Consola (F12)</h5>
+                <p class="text-[11px] text-slate-500">En la pestaña de Facebook, presiona <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono text-[10px] text-slate-700">F12</kbd> (o clic derecho &gt; <em>Inspeccionar</em>) y haz clic en la pestaña <strong>Consola (Console)</strong>.</p>
+              </div>
+
+              <!-- Step 3 -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 relative">
+                <div class="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center mb-3">3</div>
+                <h5 class="text-xs font-bold text-slate-900 mb-1">Pega y Presiona Enter</h5>
+                <p class="text-[11px] text-slate-500">Copia el script con el botón de abajo, pégalo en la consola de Facebook y presiona <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono text-[10px] text-slate-700">Enter</kbd>.</p>
+              </div>
+            </div>
+
+            <!-- Big Action Button -->
+            <div class="flex flex-col sm:flex-row items-center gap-3 p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl">
+              <button onclick="copyFacebookExtractorScript()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 transition-all">
+                <i data-lucide="copy" class="w-4 h-4"></i> Copiar Script Extractor Automático
+              </button>
+              <a href="https://www.facebook.com/marketplace/you/selling" target="_blank" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 text-center">
+                <i data-lucide="external-link" class="w-4 h-4 text-blue-600"></i> Ir a Facebook Marketplace
+              </a>
+            </div>
+          </div>
+
+          <!-- Method 2: Manual JSON Paste -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+            <h4 class="text-base font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+              <i data-lucide="file-code" class="w-5 h-5 text-slate-600"></i> Método 2: Pegar Datos JSON Manualmente (Opcional)
+            </h4>
+            <p class="text-xs text-slate-500 mb-4">
+              Si copiaste el JSON desde el extractor o tienes un archivo de respaldo, pégalo aquí para procesarlo directamente:
+            </p>
+            <textarea id="manualFbJsonInput" rows="5" placeholder='{"products": [{"title": "Ejemplo", "price": 150000, "description": "...", "images": ["https://..."]}]}' class="w-full text-xs font-mono p-3.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none bg-slate-50/60 mb-3"></textarea>
+            <button onclick="handleManualFacebookImport()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-colors">
+              <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i> Procesar e Importar a Mao Store
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= MODAL: SUBIR / EDITAR PRODUCTO ================= -->
+  <div id="productModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8 animate-fade-in">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 id="productModalTitle" class="text-lg font-extrabold text-slate-900">
+            Subir Nuevo Producto
+          </h3>
+          <p class="text-xs text-slate-500">Completa la información y sube la foto del artículo a vender</p>
+        </div>
+        <button onclick="closeProductModal()" class="w-8 h-8 rounded-full bg-slate-200/60 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <form id="productForm" onsubmit="handleProductSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="formProductId">
+
+        <!-- Image Upload Area (Up to 10 photos) -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i data-lucide="images" class="w-4 h-4 text-brand-600"></i> Fotos del Producto (Hasta 10 fotos) *
+            </label>
+            <span id="photoCountBadge" class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+              0 / 10 fotos
+            </span>
+          </div>
+          
+          <!-- Dropzone and Gallery Container -->
+          <div class="border-2 border-dashed border-slate-200 hover:border-brand-400 rounded-2xl p-4 transition-all bg-slate-50/50">
+            
+            <input 
+              type="file" 
+              id="productImageInput" 
+              accept="image/*" 
+              multiple 
+              class="hidden" 
+              onchange="handleMultipleImagesSelected(this)"
+            >
+
+            <!-- Thumbnails grid for up to 10 photos -->
+            <div id="imagesGalleryContainer" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-3 hidden">
+              <!-- Dynamically populated up to 10 photos -->
+            </div>
+
+            <!-- Upload prompt button (shown if < 10 photos) -->
+            <div id="imageUploadPrompt" class="cursor-pointer py-4 text-center border border-dashed border-slate-300 rounded-xl hover:bg-white transition-colors" onclick="document.getElementById('productImageInput').click()">
+              <div class="w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-1.5 group-hover:scale-110 transition-transform">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+              </div>
+              <p class="text-xs font-semibold text-slate-700">
+                Haz clic para seleccionar fotos o arrástralas aquí
+              </p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Puedes subir hasta 10 fotos por producto (JPG, PNG, WEBP)</p>
+            </div>
+
+            <!-- Add by URL input -->
+            <div class="mt-3 pt-2.5 border-t border-slate-200/80 flex items-center gap-2">
+              <input 
+                type="text" 
+                id="productImageUrlInput" 
+                placeholder="O pega aquí el enlace de una foto en internet..." 
+                class="flex-1 text-xs px-3 py-1.5 rounded-lg border border-slate-200 focus:border-brand-500 outline-none"
+                onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addImageByUrl(); }"
+              >
+              <button 
+                type="button" 
+                onclick="addImageByUrl()"
+                class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+              >
+                + Agregar Foto
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-1.5">
+              💡 La primera foto es la <b>portada principal</b>. Pulsa "Portada" sobre cualquier foto para cambiar el orden.
+            </p>
+          </div>
+        </div>
+
+        <!-- Name & Category -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Producto *</label>
+            <input 
+              type="text" 
+              id="formProductName" 
+              required 
+              placeholder="Ej. Zapatillas Urban Nike" 
+              class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-none"
+            >
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Categoría *</label>
+            <div class="flex gap-1.5">
+              <select 
+                id="formProductCategory" 
+                required 
+                class="flex-1 text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-none cursor-pointer"
+              >
+                <!-- Populated dynamically -->
+              </select>
+              <button 
+                type="button" 
+                onclick="promptQuickAddCategory()" 
+                class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
+                title="Nueva categoría rápida"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Price, Original Price & Stock -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Precio de Venta ($) *</label>
+            <input 
+              type="number" 
+              id="formProductPrice" 
+              required 
+              min="0" 
+              step="any"
+              placeholder="150000" 
+              class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-none font-semibold"
+            >
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Precio Anterior (Opcional)</label>
+            <input 
+              type="number" 
+              id="formProductOriginalPrice" 
+              min="0" 
+              step="any"
+              placeholder="180000" 
+              class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none text-slate-500"
+            >
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Stock Disponible *</label>
+            <input 
+              type="number" 
+              id="formProductStock" 
+              required 
+              min="0" 
+              value="10" 
+              class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none"
+            >
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Descripción del Producto</label>
+          <textarea 
+            id="formProductDescription" 
+            rows="3" 
+            placeholder="Detalles sobre materiales, tallas disponibles, garantía, colores..."
+            class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-none resize-none"
+          ></textarea>
+        </div>
+
+        <!-- Featured checkbox -->
+        <div class="flex items-center gap-2 pt-1">
+          <input 
+            type="checkbox" 
+            id="formProductFeatured" 
+            class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 cursor-pointer"
+          >
+          <label for="formProductFeatured" class="text-xs font-medium text-slate-700 cursor-pointer select-none">
+            ⭐ Destacar este producto en la página principal
+          </label>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button 
+            type="button" 
+            onclick="closeProductModal()" 
+            class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            id="btnSaveProduct"
+            class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/20 transition-all flex items-center gap-2"
+          >
+            <i data-lucide="save" class="w-4 h-4"></i> Guardar Producto
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: DETALLE DEL PRODUCTO (CLIENTES) ================= -->
+  <div id="productDetailModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8 animate-fade-in relative">
+      <button 
+        onclick="closeProductDetailModal()" 
+        class="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/90 shadow hover:bg-white flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors"
+      >
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <div class="grid grid-cols-1 md:grid-cols-2">
+        <!-- Image Area & Gallery Carousel -->
+        <div class="bg-slate-50 p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-100">
+          <div class="relative w-full aspect-square flex items-center justify-center bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200/80">
+            <img id="detailModalImage" src="" alt="" class="w-full h-full object-contain p-2 transition-all duration-300">
+            
+            <!-- Prev & Next Arrows (visible if > 1 image) -->
+            <button 
+              id="detailPrevImageBtn" 
+              onclick="prevDetailImage()" 
+              class="hidden absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-transform hover:scale-110 z-10"
+              title="Foto anterior"
+            >
+              <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            <button 
+              id="detailNextImageBtn" 
+              onclick="nextDetailImage()" 
+              class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-transform hover:scale-110 z-10"
+              title="Siguiente foto"
+            >
+              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+
+            <!-- Photo Counter Pill -->
+            <div id="detailPhotoCounter" class="absolute bottom-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-slate-900/80 text-white backdrop-blur-sm hidden">
+              1 / 1
+            </div>
+          </div>
+
+          <!-- Thumbnails Strip (up to 10 photos) -->
+          <div id="detailThumbnailsStrip" class="mt-3 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <!-- Injected thumbnails -->
+          </div>
+        </div>
+
+        <!-- Details Info -->
+        <div class="p-6 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span id="detailModalCategory" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-50 text-brand-600 uppercase">
+                Categoría
+              </span>
+              <span id="detailModalStockBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700">
+                En Stock
+              </span>
+            </div>
+
+            <h2 id="detailModalName" class="text-xl font-black text-slate-900 leading-snug">
+              Nombre Producto
+            </h2>
+
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="detailModalPrice" class="text-2xl font-black text-brand-600">
+                $0
+              </span>
+              <span id="detailModalOriginalPrice" class="text-sm font-semibold text-slate-400 line-through hidden">
+                $0
+              </span>
+            </div>
+
+            <div class="mt-4 border-t border-slate-100 pt-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Descripción</h4>
+              <p id="detailModalDescription" class="text-xs text-slate-600 leading-relaxed max-h-36 overflow-y-auto pr-1">
+                Descripción detallada...
+              </p>
+            </div>
+          </div>
+
+          <!-- Quick Actions in Detail Modal -->
+          <div class="pt-6 space-y-2.5">
+            <button 
+              id="detailModalAddToCartBtn"
+              class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+            >
+              <i data-lucide="shopping-cart" class="w-4 h-4"></i> Añadir al Carrito
+            </button>
+            <button 
+              id="detailModalBuyWhatsAppBtn"
+              class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+            >
+              <i data-lucide="message-circle" class="w-4 h-4"></i> Comprar directo por WhatsApp
+            </button>
+            <button 
+              id="detailModalEditProductBtn"
+              type="button"
+              class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors border border-slate-200"
+            >
+              <i data-lucide="edit-3" class="w-4 h-4 text-brand-600"></i> Editar este Producto
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SLIDE-OVER / MODAL: SHOPPING CART ================= -->
+  <div id="cartModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex justify-end">
+    <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-slide-left">
+      
+      <!-- Cart Header -->
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center">
+            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900">Carrito de Compras</h3>
+            <p class="text-xs text-slate-500"><span id="cartItemsCountText">0</span> artículos seleccionados</p>
+          </div>
+        </div>
+        <button onclick="closeCartModal()" class="w-8 h-8 rounded-full bg-slate-200/60 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Cart Items List -->
+      <div id="cartItemsList" class="flex-1 overflow-y-auto p-5 divide-y divide-slate-100">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Cart Empty State -->
+      <div id="cartEmptyState" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+          <i data-lucide="shopping-bag" class="w-8 h-8"></i>
+        </div>
+        <p class="text-sm font-bold text-slate-800">Tu carrito está vacío</p>
+        <p class="text-xs text-slate-400 mt-1">Explora nuestros productos y agrégalos para ordenar.</p>
+      </div>
+
+      <!-- Cart Footer / WhatsApp Checkout -->
+      <div id="cartFooter" class="p-5 border-t border-slate-100 bg-slate-50 space-y-3">
+        <div class="flex justify-between items-baseline">
+          <span class="text-xs font-medium text-slate-500">Total a pagar:</span>
+          <span id="cartTotalVal" class="text-2xl font-black text-slate-900">$0</span>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Tu Nombre (para el pedido):</label>
+          <input 
+            type="text" 
+            id="checkoutCustomerName" 
+            placeholder="Ej. Juan Pérez" 
+            class="w-full text-xs px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-brand-500 outline-none"
+          >
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Ciudad o Dirección de entrega:</label>
+          <input 
+            type="text" 
+            id="checkoutCustomerAddress" 
+            placeholder="Ej. Calle 10 # 20-30, Medellín" 
+            class="w-full text-xs px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-brand-500 outline-none"
+          >
+        </div>
+
+        <button 
+          onclick="checkoutViaWhatsApp()" 
+          class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-colors"
+        >
+          <i data-lucide="message-circle" class="w-4 h-4"></i> Enviar Pedido por WhatsApp
+        </button>
+
+        <button 
+          onclick="clearCart()" 
+          class="w-full py-1.5 text-center text-[11px] font-semibold text-slate-400 hover:text-rose-500 transition-colors"
+        >
+          Vaciar Carrito
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-white border-t border-slate-200 mt-auto py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-xs">
+          M
+        </div>
+        <span class="font-bold text-slate-800">MAO STORE</span>
+        <span>• Todos los derechos reservados &copy; 2026</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="#" onclick="switchView('store'); return false;" class="hover:text-brand-600">Catálogo</a>
+        <a href="#" id="footerAdminLink" onclick="handleAdminAccessClick(); return false;" class="hover:text-brand-600 flex items-center gap-1 transition-colors">
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-slate-400"></i> <span id="footerAdminLinkText">Acceso Creador</span>
+        </a>
+        <a href="#" onclick="contactWhatsAppDirect(); return false;" class="text-emerald-600 font-semibold flex items-center gap-1">
+          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Contactar por WhatsApp
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Main JavaScript App -->
+  <script src="js/app.js?v=4.0"></script>
+</body>
+</html>
