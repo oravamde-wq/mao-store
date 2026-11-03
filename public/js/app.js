@@ -19,6 +19,7 @@ const state = {
   currentCategory: 'all',
   searchQuery: '',
   sortBy: 'recent',
+  catalogViewMode: localStorage.getItem('mao_catalog_view_mode') || 'grid-auto', // 'list', 'grid-1', 'grid-2', 'grid-auto'
   isServerConnected: false,
   currentView: 'store', // 'store' or 'admin'
   currentAdminTab: 'products',
@@ -174,6 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkAdminAuth();
   await initStoreData();
   renderApp();
+  updateViewModeButtons();
   updateAdminUIState();
   initImageZoomLoupe();
   lucide.createIcons();
@@ -601,6 +603,40 @@ function populateCategorySelects() {
 }
 
 // ------------------------------------------
+// CATALOG VIEW SWITCHER (LIST / 1 COL / 2 COLS / 4 COLS)
+// ------------------------------------------
+function setCatalogViewMode(mode) {
+  const validModes = ['list', 'grid-1', 'grid-2', 'grid-auto'];
+  if (!validModes.includes(mode)) mode = 'grid-auto';
+  state.catalogViewMode = mode;
+  try {
+    localStorage.setItem('mao_catalog_view_mode', mode);
+  } catch (e) {}
+  updateViewModeButtons();
+  renderProductsGrid();
+}
+
+function updateViewModeButtons() {
+  const currentMode = state.catalogViewMode || 'grid-auto';
+  const modes = ['list', 'grid-1', 'grid-2', 'grid-auto'];
+  modes.forEach(m => {
+    const btn = document.getElementById(`viewBtn-${m}`);
+    if (btn) {
+      if (currentMode === m) {
+        btn.className = "px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all bg-white text-brand-600 shadow-sm border border-slate-200/90";
+      } else {
+        btn.className = "px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60";
+      }
+    }
+  });
+
+  const select = document.getElementById('catalogViewSelect');
+  if (select && select.value !== currentMode) {
+    select.value = currentMode;
+  }
+}
+
+// ------------------------------------------
 // PRODUCTS GRID (STOREFRONT)
 // ------------------------------------------
 function renderProductsGrid() {
@@ -646,6 +682,19 @@ function renderProductsGrid() {
 
   emptyState.classList.add('hidden');
 
+  // Determinar clases del contenedor según el modo elegido
+  const viewMode = state.catalogViewMode || 'grid-auto';
+  if (viewMode === 'list') {
+    grid.className = "flex flex-col gap-4 w-full";
+  } else if (viewMode === 'grid-1') {
+    grid.className = "grid grid-cols-1 max-w-xl mx-auto gap-6 w-full";
+  } else if (viewMode === 'grid-2') {
+    grid.className = "grid grid-cols-2 gap-3 sm:gap-6 w-full";
+  } else {
+    // grid-auto (estándar 3-4 columnas)
+    grid.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full";
+  }
+
   grid.innerHTML = filtered.map(prod => {
     const hasDiscount = prod.originalPrice && prod.originalPrice > prod.price;
     const discountPercent = hasDiscount 
@@ -656,6 +705,232 @@ function renderProductsGrid() {
     const displayImage = (prod.images && prod.images.length > 0) ? prod.images[0] : prod.image;
     const totalPhotos = (prod.images && prod.images.length > 0) ? prod.images.length : (prod.image ? 1 : 0);
 
+    // ==========================================
+    // MODO 1: LISTA DE DETALLES HORIZONTAL
+    // ==========================================
+    if (viewMode === 'list') {
+      return `
+        <div class="product-card group bg-white rounded-2xl border border-slate-200/90 hover:border-brand-500/40 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row overflow-hidden">
+          
+          <!-- Imagen & Badges -->
+          <div class="relative w-full md:w-64 h-56 md:h-auto flex-shrink-0 bg-slate-100 overflow-hidden cursor-pointer" onclick="openProductDetail('${prod.id}')">
+            <img 
+              src="${displayImage}" 
+              alt="${prod.name}" 
+              class="product-card-img w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'"
+            >
+            <div class="absolute top-3 left-3 flex flex-col gap-1 items-start">
+              <span class="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100">
+                ${prod.category}
+              </span>
+              ${hasDiscount ? `
+                <span class="px-2 py-0.5 text-[10px] font-black rounded-lg bg-rose-500 text-white shadow-sm">
+                  -${discountPercent}% OFF
+                </span>
+              ` : ''}
+              ${prod.featured ? `
+                <span class="px-2 py-0.5 text-[10px] font-black rounded-lg bg-amber-500 text-white shadow-sm">
+                  ⭐ Destacado
+                </span>
+              ` : ''}
+              ${totalPhotos > 1 ? `
+                <span class="px-2 py-0.5 text-[10px] font-black rounded-lg bg-slate-900/80 text-white shadow-sm flex items-center gap-1 backdrop-blur-sm">
+                  <i data-lucide="images" class="w-3 h-3 text-brand-300"></i> ${totalPhotos} fotos
+                </span>
+              ` : ''}
+            </div>
+            <div class="absolute bottom-3 left-3">
+              ${isOutOfStock ? `
+                <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-rose-600 text-white shadow">
+                  Agotado
+                </span>
+              ` : `
+                <span class="px-2 py-0.5 text-[10px] font-semibold rounded-lg bg-slate-900/75 text-white backdrop-blur-sm">
+                  Stock: ${prod.stock}
+                </span>
+              `}
+            </div>
+            <div class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <span class="px-3 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold shadow-lg flex items-center gap-1.5">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver Fotos
+              </span>
+            </div>
+          </div>
+
+          <!-- Centro: Descripción e Información Detallada -->
+          <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-2 mb-1.5">
+                <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-md">${prod.category}</span>
+                ${prod.stock > 0 && prod.stock <= 3 ? `
+                  <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">¡Últimas unidades!</span>
+                ` : ''}
+              </div>
+              <h4 class="font-extrabold text-slate-900 text-base sm:text-lg leading-snug hover:text-brand-600 transition-colors cursor-pointer" onclick="openProductDetail('${prod.id}')">
+                ${prod.name}
+              </h4>
+              <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed line-clamp-3 sm:line-clamp-4">
+                ${prod.description || 'Producto seleccionado de alta calidad con garantía oficial en MAO STORE.'}
+              </p>
+            </div>
+            
+            <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+              <span class="flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> Garantía MAO</span>
+              <span class="flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5 text-brand-600"></i> Envío Nacional</span>
+              <span class="flex items-center gap-1"><i data-lucide="camera" class="w-3.5 h-3.5 text-indigo-600"></i> ${totalPhotos} fotos HD</span>
+            </div>
+          </div>
+
+          <!-- Derecha: Precio y Botones de Compra -->
+          <div class="p-4 sm:p-5 md:w-64 flex-shrink-0 md:border-l border-slate-100 bg-slate-50/70 flex flex-col justify-between">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Precio</span>
+              <div class="flex items-baseline gap-2 mt-0.5">
+                <span class="text-2xl font-black text-slate-900">${formatMoney(prod.price)}</span>
+                ${hasDiscount ? `<span class="text-xs font-medium text-slate-400 line-through">${formatMoney(prod.originalPrice)}</span>` : ''}
+              </div>
+              ${hasDiscount ? `
+                <span class="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold bg-rose-100 text-rose-700 rounded-md">
+                  Ahorras ${formatMoney(prod.originalPrice - prod.price)}
+                </span>
+              ` : ''}
+            </div>
+
+            <div class="flex flex-col gap-2 mt-4">
+              <button 
+                onclick="addToCart('${prod.id}')"
+                ${isOutOfStock ? 'disabled' : ''}
+                class="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-brand-600 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                title="Agregar al carrito"
+              >
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                <span>${isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}</span>
+              </button>
+
+              <button 
+                onclick="buyProductWhatsAppDirect('${prod.id}')"
+                class="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                title="Comprar directo por WhatsApp"
+              >
+                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                <span>Pedir por WhatsApp</span>
+              </button>
+
+              ${state.isAdmin ? `
+                <button 
+                  type="button" 
+                  onclick="event.stopPropagation(); editProduct('${prod.id}')"
+                  class="w-full py-1.5 px-2.5 rounded-xl bg-slate-200/80 hover:bg-brand-600 hover:text-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                  <span>Editar</span>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // MODO 2: TARJETAS EN 2 COLUMNAS (COMPACTAS)
+    // ==========================================
+    if (viewMode === 'grid-2') {
+      return `
+        <div class="product-card group bg-white rounded-2xl border border-slate-200/90 hover:border-brand-500/30 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden">
+          
+          <!-- Imagen Cuadrada con Badges Compactos -->
+          <div class="relative w-full aspect-square bg-slate-100 overflow-hidden cursor-pointer" onclick="openProductDetail('${prod.id}')">
+            <img 
+              src="${displayImage}" 
+              alt="${prod.name}" 
+              class="product-card-img w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'"
+            >
+            <div class="absolute top-2 left-2 flex flex-col gap-1 items-start">
+              <span class="px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-md bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100">
+                ${prod.category}
+              </span>
+              ${hasDiscount ? `
+                <span class="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-rose-500 text-white shadow-sm">
+                  -${discountPercent}%
+                </span>
+              ` : ''}
+              ${totalPhotos > 1 ? `
+                <span class="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-slate-900/80 text-white shadow-sm flex items-center gap-0.5 backdrop-blur-sm">
+                  <i data-lucide="images" class="w-2.5 h-2.5 text-brand-300"></i> ${totalPhotos}
+                </span>
+              ` : ''}
+            </div>
+            <div class="absolute bottom-2 left-2">
+              ${isOutOfStock ? `
+                <span class="px-2 py-0.5 text-[9px] font-bold rounded-md bg-rose-600 text-white shadow">
+                  Agotado
+                </span>
+              ` : `
+                <span class="px-1.5 py-0.5 text-[9px] font-semibold rounded-md bg-slate-900/75 text-white backdrop-blur-sm">
+                  Stock: ${prod.stock}
+                </span>
+              `}
+            </div>
+          </div>
+
+          <!-- Cuerpo Compacto -->
+          <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between">
+            <div>
+              <h4 class="font-bold text-slate-900 text-xs sm:text-sm leading-snug line-clamp-2 hover:text-brand-600 transition-colors cursor-pointer" onclick="openProductDetail('${prod.id}')">
+                ${prod.name}
+              </h4>
+            </div>
+
+            <div class="mt-2.5 pt-2 border-t border-slate-100">
+              <div class="flex items-baseline gap-1.5 mb-2">
+                <span class="text-sm sm:text-base font-black text-slate-900">${formatMoney(prod.price)}</span>
+                ${hasDiscount ? `<span class="text-[10px] text-slate-400 line-through">${formatMoney(prod.originalPrice)}</span>` : ''}
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <button 
+                  onclick="addToCart('${prod.id}')"
+                  ${isOutOfStock ? 'disabled' : ''}
+                  class="flex-1 py-1.5 px-2 rounded-xl bg-slate-900 hover:bg-brand-600 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors disabled:opacity-50 shadow-sm"
+                  title="Añadir al Carrito"
+                >
+                  <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+                  <span class="text-[11px] sm:text-xs">${isOutOfStock ? 'Agotado' : 'Añadir'}</span>
+                </button>
+                <button 
+                  onclick="buyProductWhatsAppDirect('${prod.id}')"
+                  class="p-1.5 sm:px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors shadow-sm"
+                  title="Pedir por WhatsApp"
+                >
+                  <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              ${state.isAdmin ? `
+                <button 
+                  type="button" 
+                  onclick="event.stopPropagation(); editProduct('${prod.id}')"
+                  class="w-full mt-1.5 py-1 px-2 rounded-lg bg-slate-100 hover:bg-brand-600 hover:text-white text-slate-700 text-[10px] font-bold flex items-center justify-center gap-1 transition-colors"
+                >
+                  <i data-lucide="edit-3" class="w-3 h-3"></i>
+                  <span>Editar</span>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // MODO 3 / 4: TARJETAS EN 1 COLUMNA O CUADRÍCULA ESTÁNDAR
+    // ==========================================
     return `
       <div class="product-card group bg-white rounded-2xl border border-slate-200/90 hover:border-brand-500/30 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden">
         
@@ -664,7 +939,7 @@ function renderProductsGrid() {
           <img 
             src="${displayImage}" 
             alt="${prod.name}" 
-            class="product-card-img w-full h-full object-cover object-center group-hover:scale-105"
+            class="product-card-img w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
             onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'"
           >

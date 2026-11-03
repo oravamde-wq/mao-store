@@ -47,7 +47,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="css/styles.css?v=7.0">
+  <link rel="stylesheet" href="css/styles.css?v=8.0">
 </head>
 <body class="min-h-full flex flex-col font-sans selection:bg-brand-500 selection:text-white">
 
@@ -217,8 +217,8 @@
           </div>
         </div>
 
-        <!-- Filter & Sorting Bar -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-200">
+        <!-- Filter, View & Sorting Bar -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-200">
           <div>
             <h3 class="text-xl font-extrabold text-slate-900 tracking-tight" id="activeCategoryTitle">
               Todos los Productos
@@ -228,14 +228,102 @@
             </p>
           </div>
 
-          <!-- Sort & Quick Filter -->
-          <div class="flex items-center gap-3 w-full sm:w-auto">
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-              <label for="sortBySelect" class="text-xs font-medium text-slate-500 whitespace-nowrap">Ordenar por:</label>
+          <!-- Controls: View Mode Selector + Sort By + Admin Actions -->
+          <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full lg:w-auto justify-between sm:justify-end">
+            
+            <!-- Casilla / Selector de Vista (Lista de detalles, 1 Columna, 2 Columnas, Cuadrícula) -->
+            <div class="flex items-center gap-1 bg-slate-100/90 border border-slate-200 rounded-xl p-1 shadow-inner">
+              <span class="text-[11px] font-bold text-slate-500 px-1 hidden md:inline select-none">Vista:</span>
+              
+              <!-- Segmented Icon Buttons -->
+              <div class="inline-flex items-center gap-0.5" role="group" aria-label="Modo de visualización de productos">
+                <!-- 1. Lista de Detalles -->
+                <button 
+                  type="button" 
+                  id="viewBtn-list" 
+                  onclick="setCatalogViewMode('list')" 
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all text-slate-600 hover:text-slate-900 hover:bg-white"
+                  title="Lista con detalles completos de cada producto"
+                >
+                  <svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  <span class="hidden sm:inline">Lista</span>
+                </button>
+
+                <!-- 2. Tarjetas de 1 Columna -->
+                <button 
+                  type="button" 
+                  id="viewBtn-grid-1" 
+                  onclick="setCatalogViewMode('grid-1')" 
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all text-slate-600 hover:text-slate-900 hover:bg-white"
+                  title="1 Columna (Tarjetas grandes)"
+                >
+                  <svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+                  </svg>
+                  <span class="hidden sm:inline">1 Col</span>
+                </button>
+
+                <!-- 3. Tarjetas de 2 Columnas -->
+                <button 
+                  type="button" 
+                  id="viewBtn-grid-2" 
+                  onclick="setCatalogViewMode('grid-2')" 
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all text-slate-600 hover:text-slate-900 hover:bg-white"
+                  title="2 Columnas (Compacto)"
+                >
+                  <svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="8" height="18" rx="1.5"></rect>
+                    <rect x="13" y="3" width="8" height="18" rx="1.5"></rect>
+                  </svg>
+                  <span class="hidden sm:inline">2 Cols</span>
+                </button>
+
+                <!-- 4. Cuadrícula normal (3-4 cols) -->
+                <button 
+                  type="button" 
+                  id="viewBtn-grid-auto" 
+                  onclick="setCatalogViewMode('grid-auto')" 
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all text-slate-600 hover:text-slate-900 hover:bg-white"
+                  title="Cuadrícula completa (3 a 4 columnas)"
+                >
+                  <svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                    <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                  </svg>
+                  <span class="hidden md:inline">Cuadrícula</span>
+                </button>
+              </div>
+
+              <!-- Casilla Desplegable para Móviles -->
+              <select 
+                id="catalogViewSelect" 
+                onchange="setCatalogViewMode(this.value)" 
+                class="sm:hidden bg-transparent text-xs font-bold text-slate-700 py-1 px-1 outline-none cursor-pointer border-l border-slate-200 ml-1"
+                aria-label="Seleccionar modo de vista"
+              >
+                <option value="list">📋 Lista</option>
+                <option value="grid-1">📱 1 Columna</option>
+                <option value="grid-2">▦ 2 Columnas</option>
+                <option value="grid-auto">⊞ Cuadrícula</option>
+              </select>
+            </div>
+
+            <!-- Sort By Select -->
+            <div class="flex items-center gap-1.5">
+              <label for="sortBySelect" class="text-xs font-medium text-slate-500 whitespace-nowrap hidden sm:inline">Ordenar:</label>
               <select 
                 id="sortBySelect" 
                 onchange="handleSort(this.value)"
-                class="bg-white border border-slate-200 text-xs font-semibold text-slate-700 rounded-lg px-3 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 cursor-pointer w-full sm:w-auto"
+                class="bg-white border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-2.5 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 cursor-pointer shadow-sm"
               >
                 <option value="recent">Más recientes</option>
                 <option value="price-asc">Precio: Menor a Mayor</option>
@@ -247,7 +335,7 @@
             <button 
               id="storeSyncFoldersBtn"
               onclick="triggerFolderSync()"
-              class="hidden items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors border border-indigo-200 shadow-sm"
+              class="hidden items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors border border-indigo-200 shadow-sm"
               title="Cargar productos automáticamente desde las carpetas de uploads"
             >
               <i data-lucide="folder-sync" class="w-3.5 h-3.5"></i> Sincronizar Carpetas
@@ -255,7 +343,7 @@
             <button 
               id="storeNewProductBtn"
               onclick="openProductModal()"
-              class="hidden items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-sm"
+              class="hidden items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-sm"
             >
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nuevo Producto
             </button>
@@ -1208,6 +1296,6 @@
   </footer>
 
   <!-- Main JavaScript App -->
-  <script src="js/app.js?v=7.0"></script>
+  <script src="js/app.js?v=8.0"></script>
 </body>
 </html>
