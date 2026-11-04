@@ -93,22 +93,28 @@ const MIME_TYPES = {
 // -------------------------------------------------------------
 function inferCategory(folderName) {
   const name = folderName.toLowerCase();
-  if (name.includes('edredon') || name.includes('saban') || name.includes('cama') || name.includes('almohad') || name.includes('hogar')) {
-    return 'Hogar';
+  if (name.includes('auricular') || name.includes('audifono') || name.includes('parlante') || name.includes('diadema') || name.includes('soundbar') || name.includes('corneta') || name.includes('altavoz')) {
+    return 'Auriculares y parlantes';
   }
-  if (name.includes('carplay') || name.includes('proyector') || name.includes('audio') || name.includes('bluetooth') || name.includes('smart') || name.includes('tecnolog') || name.includes('tv') || name.includes('auricular')) {
-    return 'Tecnología';
+  if (name.includes('edredon') || name.includes('saban') || name.includes('cama') || name.includes('almohad') || name.includes('hogar') || name.includes('tapete') || name.includes('luz')) {
+    return 'Hogar y Confort';
   }
-  if (name.includes('zapat') || name.includes('tenis') || name.includes('calzad') || name.includes('bota') || name.includes('sneaker')) {
-    return 'Calzado';
+  if (name.includes('cocina') || name.includes('sarten') || name.includes('licuador') || name.includes('freidor') || name.includes('receta') || name.includes('termo') || name.includes('vaso')) {
+    return 'Cocina y Alimentos';
   }
-  if (name.includes('chaqueta') || name.includes('camis') || name.includes('pantalon') || name.includes('ropa') || name.includes('buzo')) {
-    return 'Ropa';
+  if (name.includes('carplay') || name.includes('coche') || name.includes('moto') || name.includes('vehicul') || name.includes('llanta') || name.includes('casco')) {
+    return 'Vehículos y Accesorios';
   }
-  if (name.includes('reloj') || name.includes('gafas') || name.includes('mochila') || name.includes('bolso') || name.includes('accesorio')) {
-    return 'Accesorios';
+  if (name.includes('zapat') || name.includes('tenis') || name.includes('calzad') || name.includes('bota') || name.includes('sneaker') || name.includes('chaqueta') || name.includes('camis') || name.includes('pantalon') || name.includes('ropa') || name.includes('buzo')) {
+    return 'Moda y Calzado';
   }
-  return 'General';
+  if (name.includes('reloj') || name.includes('gafas') || name.includes('mochila') || name.includes('bolso') || name.includes('billetera') || name.includes('cartera')) {
+    return 'Bolsos y Accesorios';
+  }
+  if (name.includes('juego') || name.includes('consola') || name.includes('gamer') || name.includes('control') || name.includes('mando') || name.includes('nintendo') || name.includes('ps4') || name.includes('ps5') || name.includes('xbox')) {
+    return 'Videojuegos y Entretenimiento';
+  }
+  return 'Tecnología y Computación';
 }
 
 function syncUploadFolders() {
@@ -148,11 +154,15 @@ function syncUploadFolders() {
 
     const primaryImage = imagesList[0];
 
-    // Check if product exists already by folderSource or matching exact name
-    const existingIndex = data.products.findIndex(p => 
-      (p.folderSource && p.folderSource === folderName) || 
-      (p.name.trim().toLowerCase() === folderName.trim().toLowerCase())
-    );
+    // Check if product exists already by folderSource or matching exact/partial name
+    const existingIndex = data.products.findIndex(p => {
+      if (p.folderSource && p.folderSource.toLowerCase() === folderName.toLowerCase()) return true;
+      const pName = (p.name || '').trim().toLowerCase();
+      const fName = folderName.trim().toLowerCase();
+      if (pName === fName) return true;
+      if (pName.length >= 15 && fName.length >= 15 && (pName.startsWith(fName) || fName.startsWith(pName))) return true;
+      return false;
+    });
 
     if (existingIndex !== -1) {
       const current = data.products[existingIndex];
@@ -364,8 +374,9 @@ const server = http.createServer(async (req, res) => {
 
       const newProduct = {
         id: 'prod-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+        code: (payload.code || '').trim().toUpperCase(),
         name: payload.name || 'Producto sin nombre',
-        category: payload.category || 'General',
+        category: payload.category || 'Tecnología y Computación',
         price: Number(payload.price) || 0,
         originalPrice: payload.originalPrice ? Number(payload.originalPrice) : null,
         image: imagesList[0], // primary image
@@ -415,6 +426,7 @@ const server = http.createServer(async (req, res) => {
 
       data.products[index] = {
         ...data.products[index],
+        code: payload.code !== undefined ? String(payload.code).trim().toUpperCase() : (data.products[index].code || ''),
         name: payload.name !== undefined ? payload.name : data.products[index].name,
         category: payload.category !== undefined ? payload.category : data.products[index].category,
         price: payload.price !== undefined ? Number(payload.price) : data.products[index].price,
@@ -708,138 +720,161 @@ const server = http.createServer(async (req, res) => {
       let updatedCount = 0;
       const processedResults = [];
 
-      for (const item of items) {
-        const title = (item.title || item.name || 'Producto Marketplace').trim();
-        if (!title) continue;
+      for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
+        const item = items[itemIdx];
+        try {
+          const title = (item.title || item.name || 'Producto Marketplace').trim();
+          if (!title) continue;
 
-        // Clean folder name for Windows filesystems (remove characters like \ / : * ? " < > |)
-        const cleanFolderName = title
-          .replace(/[\/\\:*?"<>|\r\n\t]/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .substring(0, 75);
+          // Clean folder name for Windows filesystems (remove characters like \ / : * ? " < > | and trailing spaces/dots)
+          let cleanFolderName = title
+            .replace(/[\/\\:*?"<>|\r\n\t]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 50)
+            .trim()
+            .replace(/[\.\s]+$/, '');
 
-        const folderPath = path.join(UPLOADS_DIR, cleanFolderName);
-        if (!fs.existsSync(folderPath)) {
-          fs.mkdirSync(folderPath, { recursive: true });
-        }
-
-        const rawImages = Array.isArray(item.images) ? item.images : (item.image ? [item.image] : []);
-        const downloadedImages = [];
-
-        for (let i = 0; i < Math.min(rawImages.length, 12); i++) {
-          const imgUrl = rawImages[i];
-          if (!imgUrl || typeof imgUrl !== 'string') continue;
-
-          // If image is already an internal path
-          if (imgUrl.startsWith('/uploads/')) {
-            downloadedImages.push(imgUrl);
-            continue;
+          if (!cleanFolderName || cleanFolderName.length < 2) {
+            cleanFolderName = 'producto_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
           }
 
-          let fileExt = '.jpg';
-          if (imgUrl.toLowerCase().includes('.png')) fileExt = '.png';
-          else if (imgUrl.toLowerCase().includes('.webp')) fileExt = '.webp';
+          let folderPath = path.join(UPLOADS_DIR, cleanFolderName);
+          try {
+            if (!fs.existsSync(folderPath)) {
+              fs.mkdirSync(folderPath, { recursive: true });
+            }
+          } catch (mkErr) {
+            console.warn(`[FB Import] Error creando carpeta "${cleanFolderName}": ${mkErr.message}. Usando alternativa segura.`);
+            cleanFolderName = 'prod_' + Date.now() + '_' + itemIdx;
+            folderPath = path.join(UPLOADS_DIR, cleanFolderName);
+            if (!fs.existsSync(folderPath)) {
+              fs.mkdirSync(folderPath, { recursive: true });
+            }
+          }
 
-          const fileName = `foto_${String(i + 1).padStart(2, '0')}${fileExt}`;
-          const destFilePath = path.join(folderPath, fileName);
+          const rawImages = Array.isArray(item.images) ? item.images : (item.image ? [item.image] : []);
+          const downloadedImages = [];
 
-          // Download if not exists or empty
-          if (!fs.existsSync(destFilePath) || fs.statSync(destFilePath).size === 0) {
+          for (let i = 0; i < Math.min(rawImages.length, 12); i++) {
+            const imgUrl = rawImages[i];
+            if (!imgUrl || typeof imgUrl !== 'string') continue;
+
+            // If image is already an internal path
+            if (imgUrl.startsWith('/uploads/')) {
+              downloadedImages.push(imgUrl);
+              continue;
+            }
+
+            let fileExt = '.jpg';
+            if (imgUrl.toLowerCase().includes('.png')) fileExt = '.png';
+            else if (imgUrl.toLowerCase().includes('.webp')) fileExt = '.webp';
+
+            const fileName = `foto_${String(i + 1).padStart(2, '0')}${fileExt}`;
+            const destFilePath = path.join(folderPath, fileName);
+
+            // Always download full-resolution image (overwrites any previous cropped thumbnail)
             try {
               await downloadImageToFile(imgUrl, destFilePath);
             } catch (dlErr) {
               console.warn(`[FB Import] Could not download image ${i + 1} for "${title}":`, dlErr.message);
             }
-          }
 
-          if (fs.existsSync(destFilePath) && fs.statSync(destFilePath).size > 0) {
-            const publicUrl = `/uploads/${encodeURIComponent(cleanFolderName)}/${encodeURIComponent(fileName)}`;
-            downloadedImages.push(publicUrl);
-          }
-        }
-
-        // Fallback default image if none downloaded
-        if (downloadedImages.length === 0) {
-          // Check if there are existing images in that folder on disk
-          try {
-            const existingFiles = fs.readdirSync(folderPath).filter(f => /\.(jpg|jpeg|png|webp|gif)$/i.test(f));
-            if (existingFiles.length > 0) {
-              for (const ef of existingFiles) {
-                downloadedImages.push(`/uploads/${encodeURIComponent(cleanFolderName)}/${encodeURIComponent(ef)}`);
-              }
+            if (fs.existsSync(destFilePath) && fs.statSync(destFilePath).size > 0) {
+              const publicUrl = `/uploads/${encodeURIComponent(cleanFolderName)}/${encodeURIComponent(fileName)}`;
+              downloadedImages.push(publicUrl);
             }
-          } catch (e) {}
-        }
+          }
 
-        if (downloadedImages.length === 0) {
-          downloadedImages.push('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800');
-        }
+          // Fallback default image if none downloaded
+          if (downloadedImages.length === 0) {
+            // Check if there are existing images in that folder on disk
+            try {
+              const existingFiles = fs.readdirSync(folderPath).filter(f => /\.(jpg|jpeg|png|webp|gif)$/i.test(f));
+              if (existingFiles.length > 0) {
+                for (const ef of existingFiles) {
+                  downloadedImages.push(`/uploads/${encodeURIComponent(cleanFolderName)}/${encodeURIComponent(ef)}`);
+                }
+              }
+            } catch (e) {}
+          }
 
-        // Clean price
-        let numericPrice = 0;
-        if (typeof item.price === 'number') {
-          numericPrice = item.price;
-        } else if (item.price) {
-          let str = String(item.price).replace(/COP|[\$\s]/gi, '').trim();
-          if (str.includes('.') && !str.includes(',')) str = str.replace(/\./g, '');
-          else if (str.includes(',') && !str.includes('.')) str = str.replace(/,/g, '');
-          else if (str.includes('.') && str.includes(',')) str = str.replace(/\./g, '').replace(',', '.');
-          numericPrice = parseFloat(str) || 0;
-        }
+          if (downloadedImages.length === 0) {
+            downloadedImages.push('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800');
+          }
 
-        // Category
-        const catName = (item.category && item.category !== 'General') ? item.category.trim() : inferCategory(cleanFolderName);
-        if (!data.categories.some(c => c.name.toLowerCase() === catName.toLowerCase())) {
-          data.categories.push({
-            id: 'cat-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
-            name: catName,
-            icon: catName === 'Hogar' ? 'home' : (catName === 'Tecnología' ? 'smartphone' : 'tag')
+          // Clean price
+          let numericPrice = 0;
+          if (typeof item.price === 'number') {
+            numericPrice = item.price;
+          } else if (item.price) {
+            let str = String(item.price).replace(/COP|[\$\s]/gi, '').trim();
+            if (str.includes('.') && !str.includes(',')) str = str.replace(/\./g, '');
+            else if (str.includes(',') && !str.includes('.')) str = str.replace(/,/g, '');
+            else if (str.includes('.') && str.includes(',')) str = str.replace(/\./g, '').replace(',', '.');
+            numericPrice = parseFloat(str) || 0;
+          }
+
+          // Category
+          const catName = (item.category && item.category !== 'General') ? item.category.trim() : inferCategory(cleanFolderName);
+          if (!data.categories.some(c => c.name.toLowerCase() === catName.toLowerCase())) {
+            data.categories.push({
+              id: 'cat-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
+              name: catName,
+              icon: catName === 'Hogar' ? 'home' : (catName === 'Tecnología' ? 'smartphone' : 'tag')
+            });
+          }
+
+          // Check if product exists already (by ID, folderSource, or full/partial name match)
+          const existingIdx = data.products.findIndex(p => {
+            if (item.id && p.id === item.id) return true;
+            if (p.folderSource && p.folderSource.toLowerCase() === cleanFolderName.toLowerCase()) return true;
+            const pName = (p.name || '').trim().toLowerCase();
+            const tName = title.trim().toLowerCase();
+            if (pName === tName) return true;
+            if (pName.length >= 15 && tName.length >= 15 && (pName.startsWith(tName) || tName.startsWith(pName))) return true;
+            return false;
           });
-        }
 
-        // Check if product exists already
-        const existingIdx = data.products.findIndex(p =>
-          (p.folderSource && p.folderSource.toLowerCase() === cleanFolderName.toLowerCase()) ||
-          (p.name && p.name.trim().toLowerCase() === title.toLowerCase()) ||
-          (item.id && p.id === item.id)
-        );
-
-        if (existingIdx !== -1) {
-          const curr = data.products[existingIdx];
-          data.products[existingIdx] = {
-            ...curr,
-            name: title,
-            price: numericPrice > 0 ? numericPrice : curr.price,
-            originalPrice: item.originalPrice ? Number(item.originalPrice) : curr.originalPrice,
-            description: (item.description && item.description.length > 5) ? item.description : curr.description,
-            category: catName,
-            image: downloadedImages[0],
-            images: downloadedImages,
-            folderSource: cleanFolderName,
-            updatedAt: new Date().toISOString()
-          };
-          updatedCount++;
-          processedResults.push({ id: curr.id, title, action: 'updated', folder: cleanFolderName, photos: downloadedImages.length });
-        } else {
-          const newId = 'prod-fb-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
-          const newProduct = {
-            id: newId,
-            name: title,
-            category: catName,
-            price: numericPrice,
-            originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
-            image: downloadedImages[0],
-            images: downloadedImages,
-            stock: 5,
-            featured: true,
-            description: item.description || `Producto: ${title}.\nImportado desde Facebook Marketplace.`,
-            createdAt: new Date().toISOString(),
-            folderSource: cleanFolderName
-          };
-          data.products.unshift(newProduct);
-          importedCount++;
-          processedResults.push({ id: newId, title, action: 'created', folder: cleanFolderName, photos: downloadedImages.length });
+          if (existingIdx !== -1) {
+            const curr = data.products[existingIdx];
+            const hasNewPhotos = downloadedImages.length > 0 && !downloadedImages[0].includes('unsplash');
+            data.products[existingIdx] = {
+              ...curr,
+              name: title,
+              price: numericPrice > 0 ? numericPrice : curr.price,
+              originalPrice: item.originalPrice ? Number(item.originalPrice) : curr.originalPrice,
+              description: (item.description && item.description.length > 5) ? item.description : curr.description,
+              category: catName,
+              image: hasNewPhotos ? downloadedImages[0] : (curr.image || downloadedImages[0]),
+              images: hasNewPhotos ? downloadedImages : (curr.images && curr.images.length > 0 ? curr.images : downloadedImages),
+              folderSource: cleanFolderName,
+              updatedAt: new Date().toISOString()
+            };
+            updatedCount++;
+            processedResults.push({ id: curr.id, title, action: 'updated', folder: cleanFolderName, photos: (hasNewPhotos ? downloadedImages.length : (curr.images ? curr.images.length : 1)) });
+          } else {
+            const newId = 'prod-fb-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
+            const newProduct = {
+              id: newId,
+              name: title,
+              category: catName,
+              price: numericPrice,
+              originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+              image: downloadedImages[0],
+              images: downloadedImages,
+              stock: 5,
+              featured: true,
+              description: item.description || `Producto: ${title}.\nImportado desde Facebook Marketplace.`,
+              createdAt: new Date().toISOString(),
+              folderSource: cleanFolderName
+            };
+            data.products.unshift(newProduct);
+            importedCount++;
+            processedResults.push({ id: newId, title, action: 'created', folder: cleanFolderName, photos: downloadedImages.length });
+          }
+        } catch (itemErr) {
+          console.warn(`[FB Import] Error en publicación #${itemIdx + 1}:`, itemErr.message);
         }
       }
 
@@ -857,6 +892,233 @@ const server = http.createServer(async (req, res) => {
       console.error('Error in Facebook import:', err);
       return sendJson(res, 500, { error: err.message });
     }
+  }
+
+  // POST /api/sync-google-sheets - Fetch live Google Sheets and sync all product prices
+  if (pathname === '/api/sync-google-sheets' && req.method === 'POST') {
+    try {
+      const gsheetUrl = 'https://docs.google.com/spreadsheets/d/1elmMKkIfhdNnoIqicXx8OfCO8fhOfBhN/gviz/tq?tqx=out:csv&sheet=IMPORTACIONES';
+      
+      const fetchCSV = (url) => {
+        return new Promise((resolve, reject) => {
+          https.get(url, (res) => {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+              return resolve(fetchCSV(res.headers.location));
+            }
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(data));
+          }).on('error', reject);
+        });
+      };
+
+      const rawCSV = await fetchCSV(gsheetUrl);
+      
+      // Parse CSV into rows
+      const lines = rawCSV.split(/\r?\n/).filter(line => line.trim().length > 0);
+      const rows = [];
+      for (const line of lines) {
+        const row = [];
+        let insideQuote = false;
+        let entry = '';
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            if (insideQuote && line[i + 1] === '"') {
+              entry += '"';
+              i++;
+            } else {
+              insideQuote = !insideQuote;
+            }
+          } else if (char === ',' && !insideQuote) {
+            row.push(entry.trim());
+            entry = '';
+          } else {
+            entry += char;
+          }
+        }
+        row.push(entry.trim());
+        rows.push(row);
+      }
+
+      const codeStats = new Map();
+      const nameStats = new Map();
+      const allSheetItems = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        const code = (r[2] || '').trim().toUpperCase();
+        const name = (r[3] || '').trim();
+        const rawPrice = (r[9] || '').replace(/[^\d]/g, '');
+        const price = parseInt(rawPrice, 10);
+        const isSold = (r[10] || '').trim() === '1';
+
+        if (code) {
+          if (!codeStats.has(code)) {
+            codeStats.set(code, { code, names: new Set(), totalBought: 0, totalSold: 0, price: 0 });
+          }
+          const cs = codeStats.get(code);
+          if (name) cs.names.add(name);
+          cs.totalBought += 1;
+          if (isSold) cs.totalSold += 1;
+          if (!isNaN(price) && price >= 5000) cs.price = price;
+        }
+
+        if (name) {
+          const nameKey = name.toLowerCase();
+          if (!nameStats.has(nameKey)) {
+            nameStats.set(nameKey, { name, codes: new Set(), totalBought: 0, totalSold: 0, price: 0 });
+          }
+          const ns = nameStats.get(nameKey);
+          if (code) ns.codes.add(code);
+          ns.totalBought += 1;
+          if (isSold) ns.totalSold += 1;
+          if (!isNaN(price) && price >= 5000) ns.price = price;
+        }
+
+        if (code || name) {
+          allSheetItems.push({ code, name, price, isSold });
+        }
+      }
+
+      const data = readStoreData();
+      let updatedCount = 0;
+      let matchedCount = 0;
+      let soldOutCount = 0;
+      const updatedDetails = [];
+
+      for (const prod of data.products) {
+        const title = prod.name;
+        let matchedItem = null;
+        let code = null;
+
+        // 1. Explicit P-Code e.g. P560, P-371, P528
+        const pMatch = title.match(/\bP\s*[-_]?\s*(\d{1,4})\b/i);
+        if (pMatch) {
+          code = 'P' + pMatch[1];
+          matchedItem = codeStats.get(code);
+        }
+
+        // 2. Trailing code at end of title e.g. ", 561" or "- 491"
+        if (!matchedItem) {
+          const endMatch = title.match(/(?:,\s*|-\s*|\.\s*|\s+)(\d{2,4})\s*$/);
+          if (endMatch) {
+            code = 'P' + endMatch[1];
+            matchedItem = codeStats.get(code);
+          }
+        }
+
+        // 3. Name lookup fallback
+        if (!matchedItem) {
+          matchedItem = nameStats.get(title.toLowerCase().trim());
+          if (matchedItem && matchedItem.codes.size > 0) {
+            code = Array.from(matchedItem.codes)[0];
+          }
+        }
+
+        // 4. Fuzzy keyword match
+        if (!matchedItem) {
+          const pWords = title.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+          let bestMatch = null;
+          let bestScore = 0;
+
+          for (const item of allSheetItems) {
+            if (!item.name) continue;
+            const itemLower = item.name.toLowerCase();
+            let matchCount = 0;
+            for (const w of pWords) {
+              if (itemLower.includes(w)) matchCount++;
+            }
+            if (matchCount > bestScore && matchCount >= 3) {
+              bestScore = matchCount;
+              bestMatch = item;
+            }
+          }
+
+          if (bestMatch && bestMatch.code) {
+            code = bestMatch.code;
+            matchedItem = codeStats.get(code);
+          }
+        }
+
+        if (code) {
+          prod.code = code;
+        }
+
+        if (matchedItem) {
+          matchedCount++;
+          let hasChanged = false;
+          const oldPrice = prod.price;
+          const oldStock = prod.stock;
+
+          if (matchedItem.price >= 5000 && prod.price !== matchedItem.price) {
+            prod.price = matchedItem.price;
+            hasChanged = true;
+          }
+
+          const availableStock = matchedItem.totalBought - matchedItem.totalSold;
+          const newStock = availableStock <= 0 ? 0 : availableStock;
+          if (prod.stock !== newStock) {
+            prod.stock = newStock;
+            hasChanged = true;
+          }
+
+          if (newStock === 0) soldOutCount++;
+
+          if (hasChanged) {
+            prod.updatedAt = new Date().toISOString();
+            updatedCount++;
+            updatedDetails.push({
+              id: prod.id,
+              name: prod.name,
+              code: prod.code || '',
+              oldPrice,
+              newPrice: prod.price,
+              stock: prod.stock
+            });
+          }
+        }
+      }
+
+      writeStoreData(data);
+
+      return sendJson(res, 200, {
+        success: true,
+        updatedCount,
+        matchedCount,
+        soldOutCount,
+        totalProducts: data.products.length,
+        totalSheetRows: rows.length,
+        details: updatedDetails
+      });
+    } catch (err) {
+      console.error('Error syncing Google Sheet prices:', err);
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
+  // POST /api/sync-to-render - Push local catalog and changes directly to Render
+  if (pathname === '/api/sync-to-render' && req.method === 'POST') {
+    if (!verifyAdminToken(req)) {
+      return sendJson(res, 403, { error: 'Acceso denegado: debes ser creador/administrador para sincronizar con Render.' });
+    }
+    const { execFile } = require('child_process');
+    const nodeExe = path.join(__dirname, 'node.exe');
+    const scriptPath = path.join(__dirname, 'sincronizar_con_render.js');
+    const runner = fs.existsSync(nodeExe) ? nodeExe : 'node';
+
+    execFile(runner, [scriptPath], { timeout: 240000 }, (err, stdout, stderr) => {
+      if (err) {
+        console.error('Error in sync-to-render:', err, stderr);
+        return sendJson(res, 500, { error: 'Error durante la sincronización: ' + (err.message || stderr) });
+      }
+      return sendJson(res, 200, {
+        success: true,
+        message: '¡Tienda sincronizada exitosamente con Render!',
+        output: stdout
+      });
+    });
+    return;
   }
 
   // -------------------------------------------------------------

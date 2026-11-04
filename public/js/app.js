@@ -19,7 +19,7 @@ const state = {
   currentCategory: 'all',
   searchQuery: '',
   sortBy: 'recent',
-  catalogViewMode: localStorage.getItem('mao_catalog_view_mode') || 'grid-auto', // 'list', 'grid-1', 'grid-2', 'grid-auto'
+  catalogViewMode: localStorage.getItem('mao_catalog_view_mode') || 'grid-2', // Default: 'grid-2' (2 columnas)
   isServerConnected: false,
   currentView: 'store', // 'store' or 'admin'
   currentAdminTab: 'products',
@@ -260,6 +260,9 @@ async function initStoreData() {
   }
 }
 
+// Global alias for compatibility
+window.fetchStoreData = initStoreData;
+
 function updateStatusBadge(isOnline) {
   const badge = document.getElementById('backendStatusBadge');
   if (!badge) return;
@@ -285,6 +288,7 @@ function updateAdminUIState() {
   const heroUploadBtn = document.getElementById('heroCreatorUploadBtn');
   const manageCatsBtn = document.getElementById('storeManageCategoriesBtn');
   const syncFoldersBtn = document.getElementById('storeSyncFoldersBtn');
+  const syncGsheetBtn = document.getElementById('storeSyncGsheetBtn');
   const newProductBtn = document.getElementById('storeNewProductBtn');
   const footerAdminLinkText = document.getElementById('footerAdminLinkText');
 
@@ -301,6 +305,10 @@ function updateAdminUIState() {
     if (syncFoldersBtn) {
       syncFoldersBtn.classList.remove('hidden');
       syncFoldersBtn.classList.add('inline-flex');
+    }
+    if (syncGsheetBtn) {
+      syncGsheetBtn.classList.remove('hidden');
+      syncGsheetBtn.classList.add('inline-flex');
     }
     if (newProductBtn) {
       newProductBtn.classList.remove('hidden');
@@ -320,6 +328,10 @@ function updateAdminUIState() {
     if (syncFoldersBtn) {
       syncFoldersBtn.classList.add('hidden');
       syncFoldersBtn.classList.remove('inline-flex');
+    }
+    if (syncGsheetBtn) {
+      syncGsheetBtn.classList.add('hidden');
+      syncGsheetBtn.classList.remove('inline-flex');
     }
     if (newProductBtn) {
       newProductBtn.classList.add('hidden');
@@ -531,48 +543,73 @@ async function triggerFolderSync() {
 }
 
 // ------------------------------------------
-// CATEGORY CHIPS RENDERING
+// CATEGORY NAVIGATION & CHIPS RENDERING
 // ------------------------------------------
+function scrollCategoriesCarousel(offset) {
+  const container = document.getElementById('categoryChipsContainer');
+  if (container) {
+    container.scrollBy({ left: offset, behavior: 'smooth' });
+  }
+}
+
 function renderCategoryChips() {
   const container = document.getElementById('categoryChipsContainer');
+  const dropdown = document.getElementById('categoryQuickDropdown');
+  const badge = document.getElementById('activeCategoryBadge');
+  const badgeName = document.getElementById('activeCategoryBadgeName');
+
   if (!container) return;
 
   const totalCount = state.products.length;
   const isAllActive = state.currentCategory === 'all';
 
+  // 1. Render Horizontal Visual Category Pills
   let html = `
     <button 
+      type="button"
       onclick="filterByCategory('all')"
-      class="px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+      class="category-chip px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2.5 shrink-0 ${
         isAllActive 
-          ? 'bg-slate-900 text-white shadow-md' 
-          : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          ? 'active' 
+          : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200/90 shadow-sm'
       }"
     >
-      <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+      <span class="cat-icon-box w-6 h-6 rounded-xl flex items-center justify-center ${isAllActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}">
+        <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+      </span>
       <span>Todas</span>
-      <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isAllActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">
+      <span class="cat-count-badge text-[11px] px-2 py-0.5 rounded-full font-bold ${isAllActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}">
         ${totalCount}
       </span>
     </button>
   `;
 
-  state.categories.forEach(cat => {
+  // Sort categories by product count descending
+  const sortedCategories = [...state.categories].sort((a, b) => {
+    const countA = state.products.filter(p => p.category.toLowerCase() === a.name.toLowerCase()).length;
+    const countB = state.products.filter(p => p.category.toLowerCase() === b.name.toLowerCase()).length;
+    return countB - countA;
+  });
+
+  sortedCategories.forEach(cat => {
     const count = state.products.filter(p => p.category.toLowerCase() === cat.name.toLowerCase()).length;
     const isActive = state.currentCategory.toLowerCase() === cat.name.toLowerCase();
 
     html += `
       <button 
+        type="button"
         onclick="filterByCategory('${cat.name}')"
-        class="px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+        class="category-chip px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2.5 shrink-0 ${
           isActive 
-            ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20' 
-            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            ? 'active' 
+            : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200/90 shadow-sm'
         }"
       >
-        <i data-lucide="${cat.icon || 'tag'}" class="w-3.5 h-3.5"></i>
+        <span class="cat-icon-box w-6 h-6 rounded-xl flex items-center justify-center ${isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-600'}">
+          <i data-lucide="${cat.icon || 'tag'}" class="w-3.5 h-3.5"></i>
+        </span>
         <span>${cat.name}</span>
-        <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">
+        <span class="cat-count-badge text-[11px] px-2 py-0.5 rounded-full font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}">
           ${count}
         </span>
       </button>
@@ -580,6 +617,29 @@ function renderCategoryChips() {
   });
 
   container.innerHTML = html;
+
+  // 2. Populate Quick Category Dropdown
+  if (dropdown) {
+    let dropdownHtml = `<option value="all" ${isAllActive ? 'selected' : ''}>📂 Todas las categorías (${totalCount})</option>`;
+    sortedCategories.forEach(cat => {
+      const count = state.products.filter(p => p.category.toLowerCase() === cat.name.toLowerCase()).length;
+      dropdownHtml += `<option value="${cat.name}" ${state.currentCategory.toLowerCase() === cat.name.toLowerCase() ? 'selected' : ''}>${cat.name} (${count})</option>`;
+    });
+    dropdown.innerHTML = dropdownHtml;
+  }
+
+  // 3. Active Category Badge indicator
+  if (badge && badgeName) {
+    if (isAllActive) {
+      badge.classList.add('hidden');
+      badge.classList.remove('inline-flex');
+    } else {
+      badge.classList.remove('hidden');
+      badge.classList.add('inline-flex');
+      badgeName.textContent = state.currentCategory;
+    }
+  }
+
   lucide.createIcons();
 }
 
@@ -587,7 +647,7 @@ function filterByCategory(catName) {
   state.currentCategory = catName;
   const title = document.getElementById('activeCategoryTitle');
   if (title) {
-    title.innerText = catName === 'all' ? 'Todos los Productos' : `Categoría: ${catName}`;
+    title.innerText = catName === 'all' ? 'Todos los Productos' : catName;
   }
   renderCategoryChips();
   renderProductsGrid();
@@ -607,7 +667,7 @@ function populateCategorySelects() {
 // ------------------------------------------
 function setCatalogViewMode(mode) {
   const validModes = ['list', 'grid-1', 'grid-2', 'grid-auto'];
-  if (!validModes.includes(mode)) mode = 'grid-auto';
+  if (!validModes.includes(mode)) mode = 'grid-2';
   state.catalogViewMode = mode;
   try {
     localStorage.setItem('mao_catalog_view_mode', mode);
@@ -617,7 +677,7 @@ function setCatalogViewMode(mode) {
 }
 
 function updateViewModeButtons() {
-  const currentMode = state.catalogViewMode || 'grid-auto';
+  const currentMode = state.catalogViewMode || 'grid-2';
   const modes = ['list', 'grid-1', 'grid-2', 'grid-auto'];
   modes.forEach(m => {
     const btn = document.getElementById(`viewBtn-${m}`);
@@ -653,6 +713,7 @@ function renderProductsGrid() {
     const query = state.searchQuery.toLowerCase().trim();
     const matchSearch = !query || 
       p.name.toLowerCase().includes(query) || 
+      (p.code && p.code.toLowerCase().includes(query)) ||
       (p.description && p.description.toLowerCase().includes(query)) ||
       p.category.toLowerCase().includes(query);
 
@@ -682,8 +743,8 @@ function renderProductsGrid() {
 
   emptyState.classList.add('hidden');
 
-  // Determinar clases del contenedor según el modo elegido
-  const viewMode = state.catalogViewMode || 'grid-auto';
+  // Determinar clases del contenedor según el modo elegido (Por defecto: 2 Columnas)
+  const viewMode = state.catalogViewMode || 'grid-2';
   if (viewMode === 'list') {
     grid.className = "flex flex-col gap-4 w-full";
   } else if (viewMode === 'grid-1') {
@@ -722,6 +783,11 @@ function renderProductsGrid() {
               onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'"
             >
             <div class="absolute top-3 left-3 flex flex-col gap-1 items-start">
+              ${prod.code ? `
+                <span class="px-2 py-0.5 text-[10px] font-black font-mono tracking-wider rounded-md bg-slate-950 text-amber-300 border border-amber-400/30 shadow-md">
+                  ${prod.code}
+                </span>
+              ` : ''}
               <span class="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100">
                 ${prod.category}
               </span>
@@ -743,8 +809,8 @@ function renderProductsGrid() {
             </div>
             <div class="absolute bottom-3 left-3">
               ${isOutOfStock ? `
-                <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-rose-600 text-white shadow">
-                  Agotado
+                <span class="px-2.5 py-1 text-[10px] font-black rounded-lg bg-rose-600 text-white shadow flex items-center gap-1">
+                  🚫 AGOTADO
                 </span>
               ` : `
                 <span class="px-2 py-0.5 text-[10px] font-semibold rounded-lg bg-slate-900/75 text-white backdrop-blur-sm">
@@ -763,10 +829,17 @@ function renderProductsGrid() {
           <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between">
             <div>
               <div class="flex items-center gap-2 mb-1.5">
-                <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-md">${prod.category}</span>
-                ${prod.stock > 0 && prod.stock <= 3 ? `
-                  <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">¡Últimas unidades!</span>
+                ${prod.code ? `
+                  <span class="text-xs font-mono font-black text-amber-300 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-700">
+                    ${prod.code}
+                  </span>
                 ` : ''}
+                <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-md">${prod.category}</span>
+                ${isOutOfStock ? `
+                  <span class="text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md">Agotado</span>
+                ` : (prod.stock > 0 && prod.stock <= 3 ? `
+                  <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">¡Últimas unidades!</span>
+                ` : '')}
               </div>
               <h4 class="font-extrabold text-slate-900 text-base sm:text-lg leading-snug hover:text-brand-600 transition-colors cursor-pointer" onclick="openProductDetail('${prod.id}')">
                 ${prod.name}
@@ -839,19 +912,24 @@ function renderProductsGrid() {
     // ==========================================
     if (viewMode === 'grid-2') {
       return `
-        <div class="product-card group bg-white rounded-2xl border border-slate-200/90 hover:border-brand-500/30 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden">
+        <div class="product-card group bg-white rounded-2xl border ${isOutOfStock ? 'border-slate-200 opacity-90' : 'border-slate-200/90 hover:border-brand-500/30'} shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden">
           
           <!-- Imagen Cuadrada con Badges Compactos -->
           <div class="relative w-full aspect-square bg-slate-100 overflow-hidden cursor-pointer" onclick="openProductDetail('${prod.id}')">
             <img 
               src="${displayImage}" 
               alt="${prod.name}" 
-              class="product-card-img w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              class="product-card-img w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300 ${isOutOfStock ? 'grayscale-[25%]' : ''}"
               loading="lazy"
               onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'"
             >
             <div class="absolute top-2 left-2 flex flex-col gap-1 items-start">
-              <span class="px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-md bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100">
+              ${prod.code ? `
+                <span class="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black font-mono tracking-wider rounded bg-slate-950 text-amber-300 border border-amber-400/40 shadow-md">
+                  ${prod.code}
+                </span>
+              ` : ''}
+              <span class="px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-md bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100 truncate max-w-[120px]">
                 ${prod.category}
               </span>
               ${hasDiscount ? `
@@ -867,8 +945,8 @@ function renderProductsGrid() {
             </div>
             <div class="absolute bottom-2 left-2">
               ${isOutOfStock ? `
-                <span class="px-2 py-0.5 text-[9px] font-bold rounded-md bg-rose-600 text-white shadow">
-                  Agotado
+                <span class="px-2 py-0.5 text-[9px] font-black rounded-md bg-rose-600 text-white shadow flex items-center gap-1">
+                  🚫 Agotado
                 </span>
               ` : `
                 <span class="px-1.5 py-0.5 text-[9px] font-semibold rounded-md bg-slate-900/75 text-white backdrop-blur-sm">
@@ -881,6 +959,14 @@ function renderProductsGrid() {
           <!-- Cuerpo Compacto -->
           <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between">
             <div>
+              <div class="flex items-center gap-1.5 mb-1">
+                ${prod.code ? `
+                  <span class="px-1 py-0.2 rounded text-[9px] font-black font-mono bg-slate-100 text-slate-800 border border-slate-200">
+                    ${prod.code}
+                  </span>
+                ` : ''}
+                <span class="text-[10px] text-slate-400 truncate">${prod.category}</span>
+              </div>
               <h4 class="font-bold text-slate-900 text-xs sm:text-sm leading-snug line-clamp-2 hover:text-brand-600 transition-colors cursor-pointer" onclick="openProductDetail('${prod.id}')">
                 ${prod.name}
               </h4>
@@ -896,16 +982,16 @@ function renderProductsGrid() {
                 <button 
                   onclick="addToCart('${prod.id}')"
                   ${isOutOfStock ? 'disabled' : ''}
-                  class="flex-1 py-1.5 px-2 rounded-xl bg-slate-900 hover:bg-brand-600 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors disabled:opacity-50 shadow-sm"
-                  title="Añadir al Carrito"
+                  class="flex-1 py-1.5 px-2 rounded-xl bg-slate-900 hover:bg-brand-600 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                  title="${isOutOfStock ? 'Producto agotado' : 'Añadir al Carrito'}"
                 >
                   <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
                   <span class="text-[11px] sm:text-xs">${isOutOfStock ? 'Agotado' : 'Añadir'}</span>
                 </button>
                 <button 
                   onclick="buyProductWhatsAppDirect('${prod.id}')"
-                  class="p-1.5 sm:px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors shadow-sm"
-                  title="Pedir por WhatsApp"
+                  class="p-1.5 sm:px-2 rounded-xl ${isOutOfStock ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} flex items-center justify-center transition-colors shadow-sm"
+                  title="${isOutOfStock ? 'Consultar disponibilidad por WhatsApp' : 'Pedir por WhatsApp'}"
                 >
                   <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
                 </button>
@@ -946,6 +1032,11 @@ function renderProductsGrid() {
 
           <!-- Top Badges -->
           <div class="absolute top-3 left-3 flex flex-col gap-1 items-start">
+            ${prod.code ? `
+              <span class="px-2 py-0.5 text-[10px] font-black font-mono tracking-wider rounded-md bg-slate-950 text-amber-300 border border-amber-400/40 shadow-md">
+                ${prod.code}
+              </span>
+            ` : ''}
             <span class="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100">
               ${prod.category}
             </span>
@@ -969,8 +1060,8 @@ function renderProductsGrid() {
           <!-- Stock Indicator Badge -->
           <div class="absolute bottom-3 left-3">
             ${isOutOfStock ? `
-              <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-rose-600 text-white shadow">
-                Agotado
+              <span class="px-2.5 py-1 text-[10px] font-black rounded-lg bg-rose-600 text-white shadow flex items-center gap-1">
+                🚫 AGOTADO
               </span>
             ` : `
               <span class="px-2 py-0.5 text-[10px] font-semibold rounded-lg bg-slate-900/75 text-white backdrop-blur-sm">
@@ -990,6 +1081,14 @@ function renderProductsGrid() {
         <!-- Card Body -->
         <div class="p-4 flex-1 flex flex-col justify-between">
           <div>
+            <div class="flex items-center gap-1.5 mb-1.5">
+              ${prod.code ? `
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-black font-mono bg-slate-100 text-slate-800 border border-slate-200">
+                  ${prod.code}
+                </span>
+              ` : ''}
+              <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">${prod.category}</span>
+            </div>
             <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2 hover:text-brand-600 transition-colors cursor-pointer" onclick="openProductDetail('${prod.id}')">
               ${prod.name}
             </h4>
@@ -1281,7 +1380,7 @@ function renderAdminProducts(filterTerm = '') {
   let list = state.products;
   if (filterTerm) {
     const term = filterTerm.toLowerCase();
-    list = list.filter(p => p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term));
+    list = list.filter(p => p.name.toLowerCase().includes(term) || (p.code && p.code.toLowerCase().includes(term)) || p.category.toLowerCase().includes(term));
   }
 
   if (list.length === 0) {
@@ -1313,7 +1412,10 @@ function renderAdminProducts(filterTerm = '') {
             ` : ''}
           </div>
           <div>
-            <div class="font-bold text-slate-900 leading-tight">${prod.name}</div>
+            <div class="flex items-center gap-1.5 mb-0.5">
+              ${prod.code ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-black font-mono bg-slate-900 text-amber-300 border border-slate-700 tracking-wider">${prod.code}</span>` : ''}
+              <span class="font-bold text-slate-900 leading-tight">${prod.name}</span>
+            </div>
             <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
               <span>${photoCount} foto(s)</span>
               ${prod.featured ? '<span>• ⭐ Destacado</span>' : ''}
@@ -1392,6 +1494,7 @@ function openProductModal(productId = null) {
   const modal = document.getElementById('productModal');
   const modalTitle = document.getElementById('productModalTitle');
   const form = document.getElementById('productForm');
+  const deleteBtn = document.getElementById('modalDeleteProductBtn');
 
   populateCategorySelects();
   state.selectedImages = [];
@@ -1404,8 +1507,16 @@ function openProductModal(productId = null) {
       return;
     }
 
+    state.editingProductId = prod.id;
+    if (deleteBtn) {
+      deleteBtn.classList.remove('hidden');
+      deleteBtn.classList.add('inline-flex');
+    }
+
     modalTitle.innerText = 'Editar Producto';
     document.getElementById('formProductId').value = prod.id;
+    const codeInput = document.getElementById('formProductCode');
+    if (codeInput) codeInput.value = prod.code || '';
     document.getElementById('formProductName').value = prod.name || '';
     
     // Ensure category option exists in select
@@ -1432,9 +1543,17 @@ function openProductModal(productId = null) {
       isUrl: true
     }));
   } else {
+    state.editingProductId = null;
+    if (deleteBtn) {
+      deleteBtn.classList.add('hidden');
+      deleteBtn.classList.remove('inline-flex');
+    }
+
     modalTitle.innerText = 'Subir Nuevo Producto';
     form.reset();
     document.getElementById('formProductId').value = '';
+    const newCodeInput = document.getElementById('formProductCode');
+    if (newCodeInput) newCodeInput.value = '';
     document.getElementById('formProductStock').value = '10';
   }
 
@@ -1450,13 +1569,108 @@ function closeProductModal() {
   document.body.classList.remove('overflow-hidden');
   state.selectedImages = [];
   state.editingProductId = null;
+  const deleteBtn = document.getElementById('modalDeleteProductBtn');
+  if (deleteBtn) {
+    deleteBtn.classList.add('hidden');
+    deleteBtn.classList.remove('inline-flex');
+  }
   const fileInput = document.getElementById('productImageInput');
   const urlInput = document.getElementById('productImageUrlInput');
   if (fileInput) fileInput.value = '';
   if (urlInput) urlInput.value = '';
 }
 
-// Render the 10-slots photo gallery in the modal
+// Delete Product Directly From Inside the Edit Modal
+async function handleDeleteCurrentProductFromModal() {
+  const productId = state.editingProductId || document.getElementById('formProductId').value;
+  if (!productId) return;
+
+  const prod = state.products.find(p => String(p.id) === String(productId));
+  const prodName = prod ? prod.name : 'este producto';
+
+  const result = await Swal.fire({
+    title: '¿Eliminar producto?',
+    text: `¿Estás seguro de que deseas eliminar permanentemente "${prodName}"? Esta acción no se puede deshacer.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return;
+
+  closeProductModal();
+
+  try {
+    if (state.isServerConnected) {
+      await fetch(`/api/products/${encodeURIComponent(productId)}`, {
+        method: 'DELETE',
+        headers: (typeof getAuthHeaders === 'function') ? getAuthHeaders() : {}
+      });
+    }
+
+    state.products = state.products.filter(p => String(p.id) !== String(productId));
+    if (!state.isServerConnected && typeof saveLocalData === 'function') {
+      saveLocalData();
+    }
+
+    renderApp();
+    if (typeof renderAdminProducts === 'function') renderAdminProducts();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Producto eliminado',
+      text: `"${prodName}" fue eliminado correctamente.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (err) {
+    console.error('Error al eliminar producto desde modal:', err);
+    Swal.fire('Error', 'No se pudo eliminar el producto del servidor.', 'error');
+  }
+}
+
+// Drag & Drop State for Gallery Reordering
+let draggedGalleryIndex = null;
+
+function handleGalleryDragStart(e, index) {
+  draggedGalleryIndex = index;
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', String(index)); } catch (err) {}
+  if (e.currentTarget) e.currentTarget.classList.add('opacity-40');
+}
+
+function handleGalleryDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function handleGalleryDrop(e, targetIndex) {
+  e.preventDefault();
+  if (draggedGalleryIndex === null || draggedGalleryIndex === targetIndex) return;
+  const [moved] = state.selectedImages.splice(draggedGalleryIndex, 1);
+  state.selectedImages.splice(targetIndex, 0, moved);
+  draggedGalleryIndex = null;
+  renderModalImagesGallery();
+}
+
+function handleGalleryDragEnd(e) {
+  draggedGalleryIndex = null;
+  renderModalImagesGallery();
+}
+
+// Move Image Left or Right (-1 or +1)
+function moveModalImage(index, direction) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= state.selectedImages.length) return;
+  const [moved] = state.selectedImages.splice(index, 1);
+  state.selectedImages.splice(newIndex, 0, moved);
+  renderModalImagesGallery();
+}
+
+// Render the 10-slots photo gallery in the modal with Reordering & Drag-and-Drop
 function renderModalImagesGallery() {
   const container = document.getElementById('imagesGalleryContainer');
   const prompt = document.getElementById('imageUploadPrompt');
@@ -1483,17 +1697,25 @@ function renderModalImagesGallery() {
   container.innerHTML = state.selectedImages.map((img, idx) => {
     const isPrimary = idx === 0;
     return `
-      <div class="relative group aspect-square rounded-xl overflow-hidden border-2 ${isPrimary ? 'border-brand-500 shadow-md ring-2 ring-brand-500/20' : 'border-slate-200'} bg-slate-100 flex flex-col justify-between">
-        <img src="${img.data}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
+      <div 
+        draggable="true"
+        ondragstart="handleGalleryDragStart(event, ${idx})"
+        ondragover="handleGalleryDragOver(event)"
+        ondrop="handleGalleryDrop(event, ${idx})"
+        ondragend="handleGalleryDragEnd(event)"
+        class="relative group aspect-square rounded-xl overflow-hidden border-2 ${isPrimary ? 'border-amber-400 shadow-md ring-2 ring-amber-400/30' : 'border-slate-200 hover:border-brand-400'} bg-slate-100 flex flex-col justify-between cursor-grab active:cursor-grabbing transition-all select-none"
+        title="Arrastra para cambiar el orden o usa las flechas ‹ y ›"
+      >
+        <img src="${img.data}" alt="Foto ${idx + 1}" class="w-full h-full object-cover pointer-events-none">
 
         <!-- Top Badges / Delete -->
         <div class="absolute top-1 left-1 right-1 flex items-center justify-between pointer-events-none">
-          <span class="px-1.5 py-0.5 rounded text-[9px] font-black ${isPrimary ? 'bg-brand-600 text-white' : 'bg-slate-900/70 text-white'} shadow">
-            ${isPrimary ? 'Portada' : `#${idx + 1}`}
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-black ${isPrimary ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-900/80 text-white'} backdrop-blur-sm">
+            ${isPrimary ? '⭐ Portada' : `#${idx + 1}`}
           </span>
           <button 
             type="button" 
-            onclick="removeModalImage(${idx})" 
+            onclick="event.stopPropagation(); removeModalImage(${idx})" 
             class="pointer-events-auto w-5 h-5 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center text-xs font-bold shadow transition-transform hover:scale-110"
             title="Quitar esta foto"
           >
@@ -1501,21 +1723,46 @@ function renderModalImagesGallery() {
           </button>
         </div>
 
-        <!-- Action bar at bottom: make cover -->
-        ${!isPrimary ? `
+        <!-- Bottom Controls: Move Left, Portada, Move Right -->
+        <div class="absolute bottom-1 left-1 right-1 flex items-center justify-between gap-1 bg-slate-950/80 p-1 rounded-lg backdrop-blur-sm pointer-events-auto shadow">
           <button 
             type="button" 
-            onclick="setPrimaryModalImage(${idx})"
-            class="absolute bottom-1 left-1 right-1 py-1 px-1 bg-slate-900/80 hover:bg-brand-600 text-white text-[9px] font-bold rounded-md opacity-0 group-hover:opacity-100 transition-all text-center shadow"
+            onclick="event.stopPropagation(); moveModalImage(${idx}, -1)" 
+            ${idx === 0 ? 'disabled class="opacity-20 cursor-not-allowed text-white/50 w-6 h-6 rounded flex items-center justify-center text-sm font-bold"' : 'class="hover:bg-white/20 text-white w-6 h-6 rounded flex items-center justify-center text-sm font-bold transition-colors"'} 
+            title="Mover foto a la izquierda (adelantar)"
           >
-            Hacer Portada
+            ‹
           </button>
-        ` : ''}
+
+          ${!isPrimary ? `
+            <button 
+              type="button" 
+              onclick="event.stopPropagation(); setPrimaryModalImage(${idx})" 
+              class="flex-1 py-0.5 px-1 bg-brand-600 hover:bg-brand-500 text-white text-[9px] font-black rounded text-center truncate shadow transition-colors"
+              title="Hacer esta la foto de portada principal"
+            >
+              ⭐ Portada
+            </button>
+          ` : `
+            <span class="flex-1 text-[9px] text-amber-300 font-extrabold text-center truncate">Principal</span>
+          `}
+
+          <button 
+            type="button" 
+            onclick="event.stopPropagation(); moveModalImage(${idx}, 1)" 
+            ${idx === count - 1 ? 'disabled class="opacity-20 cursor-not-allowed text-white/50 w-6 h-6 rounded flex items-center justify-center text-sm font-bold"' : 'class="hover:bg-white/20 text-white w-6 h-6 rounded flex items-center justify-center text-sm font-bold transition-colors"'} 
+            title="Mover foto a la derecha (atrasar)"
+          >
+            ›
+          </button>
+        </div>
       </div>
     `;
   }).join('');
 
-  lucide.createIcons();
+  if (window.lucide && typeof lucide.createIcons === 'function') {
+    lucide.createIcons();
+  }
 }
 
 // Handle Multiple Images Selected from PC
@@ -1606,6 +1853,7 @@ async function handleProductSubmit(e) {
   }
 
   const id = document.getElementById('formProductId').value;
+  const code = (document.getElementById('formProductCode')?.value || '').trim().toUpperCase();
   const name = document.getElementById('formProductName').value.trim();
   const category = document.getElementById('formProductCategory').value;
   const price = Number(document.getElementById('formProductPrice').value);
@@ -1656,6 +1904,7 @@ async function handleProductSubmit(e) {
     }
 
     const payload = {
+      code,
       name,
       category,
       price,
@@ -1676,8 +1925,15 @@ async function handleProductSubmit(e) {
           body: JSON.stringify(payload)
         });
         const data = await res.json();
+        if (!res.ok || !data.success) {
+          if (res.status === 401 || res.status === 403) {
+            promptAdminLogin();
+            throw new Error('Sesión de administrador expirada o no autorizada. Ingresa tu PIN de creador (0809).');
+          }
+          throw new Error(data.error || 'Error al guardar el producto en el servidor.');
+        }
         const index = state.products.findIndex(p => p.id === id);
-        if (index !== -1) state.products[index] = data.product;
+        if (index !== -1 && data.product) state.products[index] = data.product;
       } else {
         const index = state.products.findIndex(p => p.id === id);
         if (index !== -1) {
@@ -1701,7 +1957,14 @@ async function handleProductSubmit(e) {
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-        state.products.unshift(data.product);
+        if (!res.ok || !data.success) {
+          if (res.status === 401 || res.status === 403) {
+            promptAdminLogin();
+            throw new Error('Sesión de administrador expirada o no autorizada. Ingresa tu PIN de creador (0809).');
+          }
+          throw new Error(data.error || 'Error al crear el producto en el servidor.');
+        }
+        if (data.product) state.products.unshift(data.product);
       } else {
         const newProduct = {
           id: 'prod-' + Date.now(),
@@ -1726,7 +1989,7 @@ async function handleProductSubmit(e) {
 
   } catch (error) {
     console.error('Error saving product:', error);
-    Swal.fire('Error', 'No se pudo guardar el producto. Inténtalo nuevamente.', 'error');
+    Swal.fire('Error al guardar', error.message || 'No se pudo guardar el producto. Inténtalo nuevamente.', 'error');
   } finally {
     btnSave.innerHTML = originalText;
     btnSave.disabled = false;
@@ -2365,6 +2628,16 @@ function openProductDetail(productId) {
   const addCartBtn = document.getElementById('detailModalAddToCartBtn');
   const buyWaBtn = document.getElementById('detailModalBuyWhatsAppBtn');
   const editBtn = document.getElementById('detailModalEditProductBtn');
+  const codeBadge = document.getElementById('detailModalCode');
+
+  if (codeBadge) {
+    if (prod.code) {
+      codeBadge.innerText = prod.code;
+      codeBadge.classList.remove('hidden');
+    } else {
+      codeBadge.classList.add('hidden');
+    }
+  }
 
   name.innerText = prod.name;
   cat.innerText = prod.category;
@@ -3047,10 +3320,10 @@ async function handleManualFacebookImport() {
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Error en el servidor al importar');
 
-    await fetchStoreData();
-    renderProducts();
-    renderAdminProducts();
-    renderCategories();
+    await initStoreData();
+    renderApp();
+    if (typeof renderAdminProducts === 'function') renderAdminProducts();
+    if (typeof renderCategoryChips === 'function') renderCategoryChips();
 
     Swal.fire({
       icon: 'success',
@@ -3078,3 +3351,156 @@ async function handleManualFacebookImport() {
     });
   }
 }
+
+// ==========================================
+// GOOGLE SHEETS LIVE PRICE SYNCHRONIZATION
+// ==========================================
+async function syncGoogleSheetsPrices() {
+  const result = await Swal.fire({
+    title: '¿Sincronizar Precios?',
+    text: 'Se consultará tu hoja de Google Sheets en tiempo real y se actualizarán los precios de venta de todos los productos del inventario.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, sincronizar precios',
+    confirmButtonColor: '#059669',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return;
+
+  Swal.fire({
+    title: 'Sincronizando con Google Sheets...',
+    text: 'Consultando datos en tiempo real y cruzando códigos de productos...',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const res = await fetch('/api/sync-google-sheets', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {})
+      }
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al sincronizar con Google Sheets');
+
+    await initStoreData();
+    renderApp();
+    if (typeof renderAdminProducts === 'function') renderAdminProducts();
+
+    let detailsHtml = '';
+    if (data.updatedCount > 0 && Array.isArray(data.details)) {
+      detailsHtml = `
+        <div class="mt-2 text-left max-h-36 overflow-y-auto p-2 bg-slate-50 border rounded-xl text-[11px] space-y-1 font-mono">
+          ${data.details.slice(0, 20).map(d => `
+            <div class="truncate">
+              <strong>${d.name}:</strong> 
+              <span class="text-slate-400 line-through">${formatMoney(d.oldPrice)}</span> &rarr; 
+              <span class="text-emerald-600 font-bold">${formatMoney(d.newPrice)}</span>
+            </div>
+          `).join('')}
+          ${data.details.length > 20 ? `<div class="text-slate-400 italic">... y ${data.details.length - 20} productos más</div>` : ''}
+        </div>
+      `;
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Precios Actualizados!',
+      html: `
+        <div class="text-sm text-slate-700 space-y-2">
+          <p class="font-bold text-emerald-700">✓ Sincronización exitosa desde Google Sheets</p>
+          <div class="grid grid-cols-2 gap-2 text-xs text-left bg-emerald-50/70 p-3 rounded-xl border border-emerald-100">
+            <div>• <strong>Precios modificados:</strong> <span class="text-emerald-700 font-bold">${data.updatedCount}</span></div>
+            <div>• <strong>Coincidencias en Excel:</strong> <span class="text-emerald-700 font-bold">${data.matchedCount}</span></div>
+            <div>• <strong>Total productos tienda:</strong> ${data.totalProducts}</div>
+            <div>• <strong>Filas analizadas:</strong> ${data.totalSheetRows || 0}</div>
+          </div>
+          ${detailsHtml}
+          ${data.updatedCount === 0 ? '<p class="text-xs text-slate-500 italic pt-1">Todos los precios ya estaban 100% al día con tu archivo de Google Sheets.</p>' : ''}
+        </div>
+      `,
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#059669'
+    });
+  } catch (err) {
+    console.error('Error sincronizando precios de Google Sheets:', err);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error de sincronización',
+      text: err.message
+    });
+  }
+}
+
+window.syncGoogleSheetsPrices = syncGoogleSheetsPrices;
+
+// Function to push local catalog and changes directly to Render Cloud
+async function syncToRenderCloud() {
+  const confirm = await Swal.fire({
+    title: '¿Guardar y Sincronizar en Render?',
+    text: 'Se enviarán todos los productos, fotos, precios, stock y categorías de tu computador directamente a tu tienda oficial en https://mao-store.onrender.com.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#7c3aed',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Sí, sincronizar ahora',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  Swal.fire({
+    title: 'Sincronizando con Render...',
+    html: `
+      <div class="py-3 text-center space-y-3">
+        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-violet-600 border-t-transparent"></div>
+        <p class="text-xs text-slate-500">Conectando con https://mao-store.onrender.com y subiendo cambios... Esto puede tomar unos segundos.</p>
+      </div>
+    `,
+    allowOutsideClick: false,
+    showConfirmButton: false
+  });
+
+  try {
+    const res = await fetch('/api/sync-to-render', {
+      method: 'POST',
+      headers: (typeof getAuthHeaders === 'function') ? getAuthHeaders() : {}
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      if (res.status === 401 || res.status === 403) {
+        promptAdminLogin();
+        throw new Error('Debes iniciar sesión con tu PIN de creador (0809) para sincronizar.');
+      }
+      throw new Error(data.error || 'Error al conectar con Render.');
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Sincronizado en Render!',
+      html: `
+        <div class="text-sm text-slate-700 space-y-2">
+          <p class="font-bold text-violet-700">✓ Tu tienda en la nube ya tiene todos los cambios actualizados.</p>
+          <p class="text-xs text-slate-500">Puedes verificar los cambios entrando a <a href="https://mao-store.onrender.com" target="_blank" class="text-violet-600 underline font-semibold">https://mao-store.onrender.com</a>.</p>
+        </div>
+      `,
+      confirmButtonText: 'Genial',
+      confirmButtonColor: '#7c3aed'
+    });
+  } catch (err) {
+    console.error('Error sincronizando con Render:', err);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error de sincronización con Render',
+      text: err.message || 'No se pudo completar la sincronización con el servidor de Render.'
+    });
+  }
+}
+
+window.syncToRenderCloud = syncToRenderCloud;
