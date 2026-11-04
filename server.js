@@ -157,10 +157,10 @@ function syncUploadFolders() {
     // Check if product exists already by folderSource or matching exact/partial name
     const existingIndex = data.products.findIndex(p => {
       if (p.folderSource && p.folderSource.toLowerCase() === folderName.toLowerCase()) return true;
-      const pName = (p.name || '').trim().toLowerCase();
-      const fName = folderName.trim().toLowerCase();
-      if (pName === fName) return true;
-      if (pName.length >= 15 && fName.length >= 15 && (pName.startsWith(fName) || fName.startsWith(pName))) return true;
+      const cleanP = (p.name || '').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '').toLowerCase();
+      const cleanF = folderName.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '').toLowerCase();
+      if (cleanP === cleanF) return true;
+      if (cleanP.length >= 10 && cleanF.length >= 10 && (cleanP.startsWith(cleanF.substring(0, 10)) || cleanF.startsWith(cleanP.substring(0, 10)))) return true;
       return false;
     });
 
@@ -214,12 +214,9 @@ function syncUploadFolders() {
   return { added, updated, totalProducts: data.products.length };
 }
 
-// Initial sync on startup
-try {
-  syncUploadFolders();
-} catch (e) {
-  console.error('Error on initial syncUploadFolders:', e);
-}
+// Initial sync on startup (Desactivado para evitar productos duplicados con precio 0)
+// Los productos deben administrarse desde store.json o sincronizarse manualmente por el creador.
+// syncUploadFolders();
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
@@ -321,7 +318,6 @@ const server = http.createServer(async (req, res) => {
 
   // GET /api/store - Get full store state (settings, categories, products)
   if (pathname === '/api/store' && req.method === 'GET') {
-    syncUploadFolders();
     const data = readStoreData();
     const isAuthed = verifyAdminToken(req);
     const safeData = {
@@ -337,7 +333,6 @@ const server = http.createServer(async (req, res) => {
 
   // GET /api/products
   if (pathname === '/api/products' && req.method === 'GET') {
-    syncUploadFolders();
     const data = readStoreData();
     return sendJson(res, 200, data.products || []);
   }
