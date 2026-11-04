@@ -720,17 +720,30 @@ function renderProductsGrid() {
     return matchCategory && matchSearch;
   });
 
-  // Sort
-  if (state.sortBy === 'price-asc') {
-    filtered.sort((a, b) => a.price - b.price);
-  } else if (state.sortBy === 'price-desc') {
-    filtered.sort((a, b) => b.price - a.price);
-  } else if (state.sortBy === 'name-asc') {
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
-  } else {
-    // recent by default
-    filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-  }
+  // Sort: Productos con stock disponible siempre van PRIMERO, y productos AGOTADOS al FINAL
+  filtered.sort((a, b) => {
+    const aOutOfStock = Number(a.stock) <= 0;
+    const bOutOfStock = Number(b.stock) <= 0;
+
+    // Si uno está agotado y el otro no, el disponible va primero
+    if (aOutOfStock !== bOutOfStock) {
+      return aOutOfStock ? 1 : -1;
+    }
+
+    // Dentro del mismo grupo (ambos disponibles o ambos agotados), aplicar el ordenamiento elegido
+    if (state.sortBy === 'price-asc') {
+      return (a.price || 0) - (b.price || 0);
+    } else if (state.sortBy === 'price-desc') {
+      return (b.price || 0) - (a.price || 0);
+    } else if (state.sortBy === 'name-asc') {
+      return (a.name || '').localeCompare(b.name || '');
+    } else {
+      // Por defecto: destacados primero entre los disponibles, luego los más recientes
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    }
+  });
 
   // Count text
   countText.innerText = `Mostrando ${filtered.length} de ${state.products.length} productos`;
