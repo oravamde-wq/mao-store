@@ -19,7 +19,7 @@ const state = {
   currentCategory: 'all',
   searchQuery: '',
   sortBy: 'recent',
-  catalogViewMode: localStorage.getItem('mao_catalog_view_mode') || 'grid-2', // Default: 'grid-2' (2 columnas)
+  catalogViewMode: (localStorage.getItem('mao_catalog_view_mode') && ['list', 'grid-2', 'grid-auto'].includes(localStorage.getItem('mao_catalog_view_mode'))) ? localStorage.getItem('mao_catalog_view_mode') : 'grid-auto', // Default: 'grid-auto' (Siempre Cuadrícula)
   isServerConnected: false,
   currentView: 'store', // 'store' or 'admin'
   currentAdminTab: 'products',
@@ -177,7 +177,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderApp();
   updateViewModeButtons();
   updateAdminUIState();
-  initImageZoomLoupe();
   lucide.createIcons();
 
   // Soporte de enlace directo para modo desarrolladora/administradora
@@ -563,22 +562,22 @@ function renderCategoryChips() {
   const totalCount = state.products.length;
   const isAllActive = state.currentCategory === 'all';
 
-  // 1. Render Horizontal Visual Category Pills
+  // 1. Render Horizontal Visual Category Pills (Letras más grandes y destacadas)
   let html = `
     <button 
       type="button"
       onclick="filterByCategory('all')"
-      class="category-chip px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2.5 shrink-0 ${
+      class="category-chip px-5 py-3 rounded-2xl text-sm sm:text-base font-extrabold transition-all whitespace-nowrap flex items-center gap-2.5 shrink-0 shadow-sm ${
         isAllActive 
           ? 'active' 
-          : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200/90 shadow-sm'
+          : 'bg-white text-slate-800 hover:bg-slate-50 border border-slate-200'
       }"
     >
-      <span class="cat-icon-box w-6 h-6 rounded-xl flex items-center justify-center ${isAllActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}">
-        <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+      <span class="cat-icon-box w-7 h-7 rounded-xl flex items-center justify-center ${isAllActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-800'}">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i>
       </span>
-      <span>Todas</span>
-      <span class="cat-count-badge text-[11px] px-2 py-0.5 rounded-full font-bold ${isAllActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}">
+      <span class="text-sm sm:text-base font-extrabold tracking-tight">Todas</span>
+      <span class="cat-count-badge text-xs px-2.5 py-0.5 rounded-full font-black ${isAllActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}">
         ${totalCount}
       </span>
     </button>
@@ -599,17 +598,17 @@ function renderCategoryChips() {
       <button 
         type="button"
         onclick="filterByCategory('${cat.name}')"
-        class="category-chip px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2.5 shrink-0 ${
+        class="category-chip px-5 py-3 rounded-2xl text-sm sm:text-base font-extrabold transition-all whitespace-nowrap flex items-center gap-2.5 shrink-0 shadow-sm ${
           isActive 
             ? 'active' 
-            : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200/90 shadow-sm'
+            : 'bg-white text-slate-800 hover:bg-slate-50 border border-slate-200'
         }"
       >
-        <span class="cat-icon-box w-6 h-6 rounded-xl flex items-center justify-center ${isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-600'}">
-          <i data-lucide="${cat.icon || 'tag'}" class="w-3.5 h-3.5"></i>
+        <span class="cat-icon-box w-7 h-7 rounded-xl flex items-center justify-center ${isActive ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-600'}">
+          <i data-lucide="${cat.icon || 'tag'}" class="w-4 h-4"></i>
         </span>
-        <span>${cat.name}</span>
-        <span class="cat-count-badge text-[11px] px-2 py-0.5 rounded-full font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}">
+        <span class="text-sm sm:text-base font-extrabold tracking-tight">${cat.name}</span>
+        <span class="cat-count-badge text-xs px-2.5 py-0.5 rounded-full font-black ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}">
           ${count}
         </span>
       </button>
@@ -663,11 +662,11 @@ function populateCategorySelects() {
 }
 
 // ------------------------------------------
-// CATALOG VIEW SWITCHER (LIST / 1 COL / 2 COLS / 4 COLS)
+// CATALOG VIEW SWITCHER (LIST / 2 COLS / CUADRICULA)
 // ------------------------------------------
 function setCatalogViewMode(mode) {
-  const validModes = ['list', 'grid-1', 'grid-2', 'grid-auto'];
-  if (!validModes.includes(mode)) mode = 'grid-2';
+  const validModes = ['list', 'grid-2', 'grid-auto'];
+  if (!validModes.includes(mode)) mode = 'grid-auto';
   state.catalogViewMode = mode;
   try {
     localStorage.setItem('mao_catalog_view_mode', mode);
@@ -677,8 +676,8 @@ function setCatalogViewMode(mode) {
 }
 
 function updateViewModeButtons() {
-  const currentMode = state.catalogViewMode || 'grid-2';
-  const modes = ['list', 'grid-1', 'grid-2', 'grid-auto'];
+  const currentMode = state.catalogViewMode || 'grid-auto';
+  const modes = ['list', 'grid-2', 'grid-auto'];
   modes.forEach(m => {
     const btn = document.getElementById(`viewBtn-${m}`);
     if (btn) {
@@ -756,16 +755,14 @@ function renderProductsGrid() {
 
   emptyState.classList.add('hidden');
 
-  // Determinar clases del contenedor según el modo elegido (Por defecto: 2 Columnas)
-  const viewMode = state.catalogViewMode || 'grid-2';
+  // Determinar clases del contenedor según el modo elegido (Por defecto: Cuadrícula)
+  const viewMode = state.catalogViewMode || 'grid-auto';
   if (viewMode === 'list') {
     grid.className = "flex flex-col gap-4 w-full";
-  } else if (viewMode === 'grid-1') {
-    grid.className = "grid grid-cols-1 max-w-xl mx-auto gap-6 w-full";
   } else if (viewMode === 'grid-2') {
     grid.className = "grid grid-cols-2 gap-3 sm:gap-6 w-full";
   } else {
-    // grid-auto (estándar 3-4 columnas)
+    // grid-auto (estándar 3-4 columnas cuadrícula)
     grid.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full";
   }
 
@@ -801,7 +798,7 @@ function renderProductsGrid() {
                   ${prod.code}
                 </span>
               ` : ''}
-              <span class="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100">
+              <span class="px-2.5 py-1 text-xs font-black uppercase tracking-wider rounded-lg bg-white/95 backdrop-blur-md text-slate-800 shadow-sm border border-slate-200">
                 ${prod.category}
               </span>
               ${hasDiscount ? `
@@ -942,7 +939,7 @@ function renderProductsGrid() {
                   ${prod.code}
                 </span>
               ` : ''}
-              <span class="px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-md bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100 truncate max-w-[120px]">
+              <span class="px-2 py-0.5 text-[11px] sm:text-xs font-black uppercase tracking-wider rounded-md bg-white/95 backdrop-blur-md text-slate-800 shadow-sm border border-slate-200 truncate max-w-[140px]">
                 ${prod.category}
               </span>
               ${hasDiscount ? `
@@ -983,13 +980,22 @@ function renderProductsGrid() {
               <h4 class="font-bold text-slate-900 text-xs sm:text-sm leading-snug line-clamp-2 hover:text-brand-600 transition-colors cursor-pointer" onclick="openProductDetail('${prod.id}')">
                 ${prod.name}
               </h4>
+              <div class="flex items-center gap-1 my-1 text-[10px]">
+                <div class="flex text-amber-400">★★★★★</div>
+                <span class="font-bold text-slate-700">4.9</span>
+              </div>
             </div>
 
             <div class="mt-2.5 pt-2 border-t border-slate-100">
-              <div class="flex items-baseline gap-1.5 mb-2">
+              <div class="flex items-baseline gap-1.5 mb-1">
                 <span class="text-sm sm:text-base font-black text-slate-900">${formatMoney(prod.price)}</span>
                 ${hasDiscount ? `<span class="text-[10px] text-slate-400 line-through">${formatMoney(prod.originalPrice)}</span>` : ''}
               </div>
+              ${hasDiscount ? `
+                <div class="text-[9px] font-extrabold text-rose-600 mb-1.5">
+                  Ahorras ${formatMoney(prod.originalPrice - prod.price)}
+                </div>
+              ` : ''}
 
               <div class="flex items-center gap-1.5">
                 <button 
@@ -1050,7 +1056,7 @@ function renderProductsGrid() {
                 ${prod.code}
               </span>
             ` : ''}
-            <span class="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-white/90 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100">
+            <span class="px-2.5 py-1 text-xs font-black uppercase tracking-wider rounded-lg bg-white/95 backdrop-blur-md text-slate-800 shadow-sm border border-slate-200">
               ${prod.category}
             </span>
             ${hasDiscount ? `
@@ -1105,6 +1111,24 @@ function renderProductsGrid() {
             <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2 hover:text-brand-600 transition-colors cursor-pointer" onclick="openProductDetail('${prod.id}')">
               ${prod.name}
             </h4>
+
+            <!-- Rating & Social Proof -->
+            <div class="flex items-center gap-1.5 my-1.5 text-xs">
+              <div class="flex text-amber-400 text-xs">★★★★★</div>
+              <span class="text-[11px] font-bold text-slate-700">4.9</span>
+              <span class="text-[10px] text-slate-400 font-normal">· Verificado</span>
+            </div>
+
+            <!-- Urgency & Fast Shipping Pill -->
+            ${!isOutOfStock && prod.stock <= 3 ? `
+              <div class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 mb-1">
+                🔥 ¡Solo ${prod.stock} disponible(s)!
+              </div>
+            ` : (!isOutOfStock && prod.price >= 70000 ? `
+              <div class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/50 mb-1">
+                🚚 Envío Rápido
+              </div>
+            ` : '')}
             
             <p class="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
               ${prod.description || 'Sin descripción adicional.'}
@@ -1113,23 +1137,28 @@ function renderProductsGrid() {
 
           <div class="mt-4 pt-3 border-t border-slate-100">
             <!-- Price Display -->
-            <div class="flex items-baseline gap-2 mb-3">
-              <span class="text-lg font-black text-slate-900">
+            <div class="flex items-baseline gap-2 mb-1">
+              <span class="text-xl font-black text-slate-900 tracking-tight">
                 ${formatMoney(prod.price)}
               </span>
               ${hasDiscount ? `
-                <span class="text-xs font-medium text-slate-400 line-through">
+                <span class="text-xs font-semibold text-slate-400 line-through">
                   ${formatMoney(prod.originalPrice)}
                 </span>
               ` : ''}
             </div>
+            ${hasDiscount ? `
+              <div class="text-[10px] font-extrabold text-rose-600 mb-2">
+                Ahorras ${formatMoney(prod.originalPrice - prod.price)} (-${discountPercent}%)
+              </div>
+            ` : '<div class="mb-1"></div>'}
 
             <!-- Action Buttons -->
             <div class="grid grid-cols-2 gap-2 mb-2">
               <button 
                 onclick="addToCart('${prod.id}')"
                 ${isOutOfStock ? 'disabled' : ''}
-                class="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-brand-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                class="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-brand-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
                 title="Agregar al carrito"
               >
                 <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
@@ -1138,11 +1167,11 @@ function renderProductsGrid() {
 
               <button 
                 onclick="buyProductWhatsAppDirect('${prod.id}')"
-                class="py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                class="py-2 px-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/25 active:scale-95"
                 title="Comprar directo por WhatsApp"
               >
                 <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
-                <span>Comprar</span>
+                <span>Pedir Ya</span>
               </button>
             </div>
 
@@ -1893,12 +1922,15 @@ async function handleProductSubmit(e) {
         finalImageUrls.push(imgItem.data);
       } else if (state.isServerConnected) {
         try {
+          const currentProd = id ? state.products.find(p => p.id === id) : null;
           const uploadRes = await fetch('/api/upload', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({
               filename: imgItem.filename || `foto_${i + 1}.jpg`,
-              data: imgItem.data
+              data: imgItem.data,
+              productId: id || '',
+              folder: (currentProd && currentProd.folder) ? currentProd.folder : ''
             })
           });
           if (uploadRes.ok) {
@@ -2660,8 +2692,17 @@ function openProductDetail(productId) {
   if (prod.originalPrice && prod.originalPrice > prod.price) {
     origPrice.innerText = formatMoney(prod.originalPrice);
     origPrice.classList.remove('hidden');
+    const savingsBadge = document.getElementById('detailModalSavings');
+    if (savingsBadge) {
+      const saved = prod.originalPrice - prod.price;
+      const pct = Math.round((saved / prod.originalPrice) * 100);
+      savingsBadge.innerText = `¡Ahorras ${formatMoney(saved)} (-${pct}%)!`;
+      savingsBadge.classList.remove('hidden');
+    }
   } else {
     origPrice.classList.add('hidden');
+    const savingsBadge = document.getElementById('detailModalSavings');
+    if (savingsBadge) savingsBadge.classList.add('hidden');
   }
 
   if (Number(prod.stock) > 0) {
@@ -2718,8 +2759,6 @@ function renderDetailGallery() {
   const nextBtn = document.getElementById('detailNextImageBtn');
   const counter = document.getElementById('detailPhotoCounter');
   const thumbnails = document.getElementById('detailThumbnailsStrip');
-  const loupe = document.getElementById('imageZoomLoupe');
-  if (loupe) loupe.classList.add('hidden');
 
   const total = state.activeDetailImages.length;
   const currentSrc = state.activeDetailImages[state.activeDetailIndex] || '';
@@ -2779,8 +2818,6 @@ function nextDetailImage() {
 function closeProductDetailModal() {
   document.getElementById('productDetailModal').classList.add('hidden');
   document.body.classList.remove('overflow-hidden');
-  const loupe = document.getElementById('imageZoomLoupe');
-  if (loupe) loupe.classList.add('hidden');
   closeFullscreenLightbox();
 }
 
@@ -2801,9 +2838,6 @@ let lightboxTouchEndX = 0;
 function openFullscreenLightbox() {
   const lightbox = document.getElementById('fullscreenImageLightbox');
   if (!lightbox) return;
-
-  const loupe = document.getElementById('imageZoomLoupe');
-  if (loupe) loupe.classList.add('hidden');
 
   const prodNameEl = document.getElementById('detailModalName');
   const lightboxProdName = document.getElementById('lightboxProductName');
@@ -2941,96 +2975,7 @@ document.addEventListener('keydown', (e) => {
 // INTERACTIVE IMAGE ZOOM LOUPE (MAGNIFYING GLASS)
 // ==========================================
 function initImageZoomLoupe() {
-  const container = document.getElementById('detailImageContainer');
-  const img = document.getElementById('detailModalImage');
-  const loupe = document.getElementById('imageZoomLoupe');
-  if (!container || !img || !loupe) return;
-
-  const ZOOM_LEVEL = 2.4; // Factor de aumento 2.4x
-
-  function updateLoupe(clientX, clientY, isTouch = false) {
-    if (!img.src || img.naturalWidth === 0) return;
-
-    const imgRect = img.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-
-    // Comprobar si el cursor o dedo está sobre la imagen visible
-    if (
-      clientX < imgRect.left || clientX > imgRect.right ||
-      clientY < imgRect.top || clientY > imgRect.bottom
-    ) {
-      loupe.classList.add('hidden');
-      return;
-    }
-
-    loupe.classList.remove('hidden');
-
-    const loupeWidth = loupe.offsetWidth || 150;
-    const loupeHeight = loupe.offsetHeight || 150;
-
-    // Coordenadas relativas a la imagen real
-    const imgX = clientX - imgRect.left;
-    const imgY = clientY - imgRect.top;
-
-    // Coordenadas relativas al contenedor
-    const containerX = clientX - containerRect.left;
-    const containerY = clientY - containerRect.top;
-
-    // Posición centrada en el cursor
-    let loupeLeft = containerX - (loupeWidth / 2);
-    let loupeTop = containerY - (loupeHeight / 2);
-
-    // En celular (pantalla táctil), elevar la lupa 25px por encima del dedo para que el pulgar no la tape
-    if (isTouch) {
-      loupeTop = containerY - loupeHeight - 25;
-      if (loupeTop < 5) {
-        loupeTop = containerY + 25; // Si está muy arriba, colocarla abajo del dedo
-      }
-    }
-
-    // Mantener la lupa dentro de los bordes del recuadro
-    loupeLeft = Math.max(0, Math.min(containerRect.width - loupeWidth, loupeLeft));
-    loupeTop = Math.max(0, Math.min(containerRect.height - loupeHeight, loupeTop));
-
-    loupe.style.left = `${loupeLeft}px`;
-    loupe.style.top = `${loupeTop}px`;
-
-    // Configurar imagen de fondo con zoom nítido
-    loupe.style.backgroundImage = `url("${img.src}")`;
-    loupe.style.backgroundSize = `${imgRect.width * ZOOM_LEVEL}px ${imgRect.height * ZOOM_LEVEL}px`;
-
-    const bgX = (imgX * ZOOM_LEVEL) - (loupeWidth / 2);
-    const bgY = (imgY * ZOOM_LEVEL) - (loupeHeight / 2);
-
-    loupe.style.backgroundPosition = `-${bgX}px -${bgY}px`;
-  }
-
-  function hideLoupe() {
-    loupe.classList.add('hidden');
-  }
-
-  // Eventos de ratón (Computadora)
-  container.addEventListener('mousemove', (e) => {
-    updateLoupe(e.clientX, e.clientY, false);
-  });
-  container.addEventListener('mouseleave', hideLoupe);
-
-  // Eventos táctiles (Celular)
-  container.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches.length === 1) {
-      updateLoupe(e.touches[0].clientX, e.touches[0].clientY, true);
-    }
-  }, { passive: true });
-
-  container.addEventListener('touchmove', (e) => {
-    if (e.touches && e.touches.length === 1) {
-      if (e.cancelable) e.preventDefault();
-      updateLoupe(e.touches[0].clientX, e.touches[0].clientY, true);
-    }
-  }, { passive: false });
-
-  container.addEventListener('touchend', hideLoupe);
-  container.addEventListener('touchcancel', hideLoupe);
+  // Lupa desactivada a petición del usuario
 }
 
 // ==========================================

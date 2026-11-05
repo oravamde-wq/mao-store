@@ -16,6 +16,11 @@ function generateAdminToken(pin) {
 }
 
 function verifyAdminToken(req) {
+  // En localhost (computador local del dueño), tiene acceso directo de creador
+  const ip = getClientIp(req);
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || (req.headers.host && req.headers.host.includes('localhost'))) {
+    return true;
+  }
   const token = req.headers['x-admin-token'];
   if (!token) return false;
   const data = readStoreData();
@@ -89,6 +94,99 @@ const MIME_TYPES = {
 };
 
 // -------------------------------------------------------------
+// HELPERS FOR PRODUCT FOLDERS & TEXT FILES (producto.txt)
+// -------------------------------------------------------------
+function sanitizeFolderName(name) {
+  return (name || 'producto')
+    .replace(/[<>:"/\\|?*]/g, '')
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 65)
+    .replace(/[.,\s_\-]+$/, '')
+    .trim();
+}
+
+function parseProductTxt(txtPath) {
+  if (!fs.existsSync(txtPath)) return null;
+  try {
+    const content = fs.readFileSync(txtPath, 'utf8');
+    const result = {};
+
+    const codeMatch = content.match(/ITEM\s*\((?:CODIGO|C[ÓO]DIGO)\)\s*:\s*([^\r\n]+)/i);
+    if (codeMatch && codeMatch[1].trim() && codeMatch[1].trim() !== 'N/A') {
+      result.code = codeMatch[1].trim();
+    }
+
+    const titleMatch = content.match(/TITULO\s*:\s*([^\r\n]+)/i);
+    if (titleMatch && titleMatch[1].trim()) {
+      result.name = titleMatch[1].trim();
+    }
+
+    const priceMatch = content.match(/PRECIO_VENTA\s*:\s*([^\r\n]+)/i);
+    if (priceMatch) {
+      const num = parseInt(priceMatch[1].replace(/[^\d]/g, ''), 10);
+      if (!isNaN(num) && num > 0) result.price = num;
+    }
+
+    const stockMatch = content.match(/STOCK\s*:\s*([^\r\n]+)/i);
+    if (stockMatch) {
+      const num = parseInt(stockMatch[1].replace(/[^\d]/g, ''), 10);
+      if (!isNaN(num)) result.stock = num;
+    }
+
+    const catMatch = content.match(/CATEGORIA\s*:\s*([^\r\n]+)/i);
+    if (catMatch && catMatch[1].trim()) {
+      result.category = catMatch[1].trim();
+    }
+
+    const descMatch = content.match(/DESCRIPCION:\s*\r?\n([\s\S]*?)(?=\r?\n(?:PRECIO_VENTA|STOCK|CATEGORIA|ESTADO|ENLACE|PUNTOS|===)|$)/i);
+    if (descMatch && descMatch[1].trim()) {
+      result.description = descMatch[1].trim();
+    }
+
+    return result;
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeProductTxt(folderPath, product) {
+  try {
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath, { recursive: true });
+    }
+    const txtPath = path.join(folderPath, 'producto.txt');
+    const imgsCount = Array.isArray(product.images) ? product.images.length : (product.image ? 1 : 0);
+    const txtContent = `============================================================
+INFORMACION DEL PRODUCTO - MAO STORE
+============================================================
+ITEM (CODIGO): ${product.code || 'N/A'}
+TITULO: ${product.name || 'Sin título'}
+DESCRIPCION:
+${product.description || `Producto: ${product.name}`}
+
+PRECIO_VENTA: ${product.price || 0}
+STOCK: ${product.stock !== undefined ? product.stock : 1}
+CATEGORIA: ${product.category || 'Tecnología y Computación'}
+ESTADO: ${Number(product.stock) <= 0 ? 'AGOTADO' : 'DISPONIBLE'}
+
+PUNTOS IMPORTANTES / CARACTERISTICAS:
+• Codigo ITEM de inventario: ${product.code || 'N/A'}
+• Titulo del producto: ${product.name || 'Sin título'}
+• Precio oficial de venta: $ ${(product.price || 0).toLocaleString('es-CO')} COP
+• Categoria: ${product.category || 'Tecnología y Computación'}
+• Estado de stock: ${Number(product.stock) <= 0 ? 'Agotado (0 unidades)' : `Disponible (${product.stock} unidades)`}
+• Archivos multimedia: ${imgsCount} foto(s) detectada(s) en esta carpeta
+============================================================
+`;
+    fs.writeFileSync(txtPath, txtContent, 'utf8');
+  } catch (e) {
+    console.error('Error al guardar producto.txt:', e.message);
+  }
+}
+
+// -------------------------------------------------------------
 // AUTO-SYNC FOLDERS IN /uploads AS PRODUCTS
 // -------------------------------------------------------------
 function inferCategory(folderName) {
@@ -118,7 +216,7 @@ function inferCategory(folderName) {
 }
 
 function syncUploadFolders() {
-  if (!fs.existsSync(UPLOADS_DIR)) return { added: 0, updated: 0 };
+  if (!fs.existsSync(UPLOADS_DIR)) return { added: 0, updated: 0, totalProducts: 0 };
 
   const data = readStoreData();
   let added = 0;
@@ -132,7 +230,7 @@ function syncUploadFolders() {
     const folderName = entry.name;
     const folderPath = path.join(UPLOADS_DIR, folderName);
 
-    // Read image files inside folder
+    // Leer fotos de la carpeta
     let files = [];
     try {
       files = fs.readdirSync(folderPath);
@@ -140,23 +238,28 @@ function syncUploadFolders() {
       continue;
     }
 
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.mp4'];
     const imageFiles = files
       .filter(f => imageExtensions.includes(path.extname(f).toLowerCase()))
       .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-    if (imageFiles.length === 0) continue;
+    // Leer producto.txt de la carpeta si existe
+    const txtPath = path.join(folderPath, 'producto.txt');
+    const txtData = parseProductTxt(txtPath);
 
-    // Up to 10 photos
-    const imagesList = imageFiles.slice(0, 10).map(file => {
+    // Si no hay imágenes ni producto.txt, ignorar
+    if (imageFiles.length === 0 && !txtData) continue;
+
+    const imagesList = imageFiles.map(file => {
       return `/uploads/${encodeURIComponent(folderName)}/${encodeURIComponent(file)}`;
     });
+    const primaryImage = imagesList[0] || '';
 
-    const primaryImage = imagesList[0];
-
-    // Check if product exists already by folderSource or matching exact/partial name
+    // Buscar si ya existe el producto en data.products
     const existingIndex = data.products.findIndex(p => {
+      if (p.folder && p.folder.toLowerCase() === folderName.toLowerCase()) return true;
       if (p.folderSource && p.folderSource.toLowerCase() === folderName.toLowerCase()) return true;
+      if (txtData && txtData.code && p.code && p.code.toUpperCase() === txtData.code.toUpperCase()) return true;
       const cleanP = (p.name || '').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '').toLowerCase();
       const cleanF = folderName.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '').toLowerCase();
       if (cleanP === cleanF) return true;
@@ -166,49 +269,73 @@ function syncUploadFolders() {
 
     if (existingIndex !== -1) {
       const current = data.products[existingIndex];
-      const imagesChanged = JSON.stringify(current.images) !== JSON.stringify(imagesList);
+      let changed = false;
 
-      if (imagesChanged) {
-        data.products[existingIndex].images = imagesList;
-        data.products[existingIndex].image = primaryImage;
-        data.products[existingIndex].folderSource = folderName;
+      // Sincronizar carpeta
+      if (current.folder !== folderName) {
+        current.folder = folderName;
+        changed = true;
+      }
+
+      // Sincronizar imágenes detectadas en la carpeta
+      if (imagesList.length > 0 && JSON.stringify(current.images) !== JSON.stringify(imagesList)) {
+        current.images = imagesList;
+        current.image = primaryImage;
+        changed = true;
+      }
+
+      // Sincronizar datos desde producto.txt si fue editado
+      if (txtData) {
+        if (txtData.code && current.code !== txtData.code) { current.code = txtData.code; changed = true; }
+        if (txtData.name && current.name !== txtData.name) { current.name = txtData.name; changed = true; }
+        if (txtData.price !== undefined && current.price !== txtData.price) { current.price = txtData.price; changed = true; }
+        if (txtData.stock !== undefined && current.stock !== txtData.stock) { current.stock = txtData.stock; changed = true; }
+        if (txtData.description && current.description !== txtData.description) { current.description = txtData.description; changed = true; }
+        if (txtData.category && current.category !== txtData.category) { current.category = txtData.category; changed = true; }
+      }
+
+      if (changed) {
+        data.products[existingIndex] = current;
         updated++;
       }
     } else {
-      const catName = inferCategory(folderName);
+      // Producto nuevo creado desde carpeta
+      const catName = (txtData && txtData.category) ? txtData.category : inferCategory(folderName);
       
-      // Auto-add category if missing
       if (!data.categories.some(c => c.name.toLowerCase() === catName.toLowerCase())) {
         data.categories.push({
           id: 'cat-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
           name: catName,
-          icon: catName === 'Hogar' ? 'home' : (catName === 'Tecnología' ? 'smartphone' : 'tag')
+          icon: 'tag'
         });
       }
 
       const newProd = {
         id: 'prod-folder-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-        name: folderName,
+        code: (txtData && txtData.code) ? txtData.code : '',
+        name: (txtData && txtData.name) ? txtData.name : folderName,
         category: catName,
-        price: 0,
+        price: (txtData && txtData.price) ? txtData.price : 0,
         originalPrice: null,
         image: primaryImage,
         images: imagesList,
-        stock: 5,
+        stock: (txtData && txtData.stock !== undefined) ? txtData.stock : 5,
         featured: false,
-        description: `Producto: ${folderName}.\nCargado automáticamente con ${imagesList.length} foto(s) desde la carpeta uploads.`,
+        description: (txtData && txtData.description) ? txtData.description : `Producto: ${folderName}`,
         createdAt: new Date().toISOString(),
+        folder: folderName,
         folderSource: folderName
       };
 
       data.products.unshift(newProd);
+      writeProductTxt(folderPath, newProd);
       added++;
     }
   }
 
   if (added > 0 || updated > 0) {
     writeStoreData(data);
-    console.log(`[Auto-Sync] Carpetas en uploads procesadas: ${added} nuevo(s), ${updated} actualizado(s).`);
+    console.log(`[Auto-Sync] Sincronización de carpetas: ${added} nuevo(s), ${updated} actualizado(s).`);
   }
 
   return { added, updated, totalProducts: data.products.length };
@@ -218,15 +345,72 @@ function syncUploadFolders() {
 // Los productos deben administrarse desde store.json o sincronizarse manualmente por el creador.
 // syncUploadFolders();
 
+// -------------------------------------------------------------
+// RATE LIMITING & SECURITY DEFENSES
+// -------------------------------------------------------------
+const failedLoginAttempts = new Map(); // ip -> { count: number, blockedUntil: number }
+const ipRequestCounts = new Map(); // ip -> { count: number, resetAt: number }
+
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return req.socket?.remoteAddress || '127.0.0.1';
+}
+
+function checkRateLimit(req, pathname) {
+  // 1. Excluir completamente archivos estáticos (imágenes, CSS, JS, fuentes, video)
+  if (pathname && !pathname.startsWith('/api/')) return true;
+
+  // 2. Excluir tráfico local en localhost
+  const ip = getClientIp(req);
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.includes('localhost')) {
+    return true;
+  }
+
+  // 3. Excluir al creador / administrador autenticado (nunca bloquear edición de productos)
+  if (verifyAdminToken(req)) {
+    return true;
+  }
+
+  // 4. Rate limit solo para llamadas anónimas a la API pública
+  const now = Date.now();
+  const limitWindow = 60 * 1000; // 1 minuto
+  const maxRequests = 600; // 600 peticiones API por minuto
+
+  let record = ipRequestCounts.get(ip);
+  if (!record || now > record.resetAt) {
+    record = { count: 1, resetAt: now + limitWindow };
+    ipRequestCounts.set(ip, record);
+    return true;
+  }
+  record.count++;
+  if (record.count > maxRequests) {
+    return false;
+  }
+  return true;
+}
+
+function requireAdmin(req, res) {
+  if (verifyAdminToken(req)) return true;
+  sendJson(res, 401, { 
+    error: 'No autorizado. Debes iniciar sesión con tu PIN de creador (0809) para realizar esta acción.' 
+  });
+  return false;
+}
+
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
+    let bytesReceived = 0;
+    const MAX_SIZE = 35 * 1024 * 1024; // 35MB máximo para fotos/video
+
     req.on('data', chunk => {
-      body += chunk;
-      // Protection against oversized payloads (limit 50MB for up to 10 high-res photos)
-      if (body.length > 50 * 1024 * 1024) {
-        reject(new Error('Payload too large'));
+      bytesReceived += chunk.length;
+      if (bytesReceived > MAX_SIZE) {
+        req.destroy();
+        return reject(new Error('El tamaño de la petición excede el límite permitido de seguridad (35MB)'));
       }
+      body += chunk;
     });
     req.on('end', () => {
       if (!body) return resolve({});
@@ -247,39 +431,68 @@ function sendJson(res, statusCode, data) {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, x-admin-token, authorization',
-    'Access-Control-Allow-Private-Network': 'true'
+    'Access-Control-Allow-Private-Network': 'true',
+    // OWASP Security Headers
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
   });
   res.end(JSON.stringify(data));
 }
 
 const server = http.createServer(async (req, res) => {
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const pathname = parsedUrl.pathname;
+
+  // Rate limiting para llamadas API (excluyendo estáticos, localhost y creador autenticado)
+  if (!checkRateLimit(req, pathname)) {
+    return sendJson(res, 429, { 
+      error: 'Demasiadas solicitudes por minuto. Por seguridad, por favor espera un momento.' 
+    });
+  }
+
   // CORS Preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, x-admin-token, authorization',
-      'Access-Control-Allow-Private-Network': 'true'
+      'Access-Control-Allow-Private-Network': 'true',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN'
     });
     return res.end();
   }
-
-  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const pathname = parsedUrl.pathname;
 
   // -------------------------------------------------------------
   // API ROUTES
   // -------------------------------------------------------------
 
-  // POST /api/admin/login - Authenticate Creator PIN
+  // POST /api/admin/login - Authenticate Creator PIN con protección contra fuerza bruta
   if (pathname === '/api/admin/login' && req.method === 'POST') {
     try {
+      const ip = getClientIp(req);
+      const now = Date.now();
+      const attempts = failedLoginAttempts.get(ip) || { count: 0, blockedUntil: 0 };
+
+      // Comprobar si la IP está bloqueada por demasiados intentos fallidos
+      if (attempts.blockedUntil && now < attempts.blockedUntil) {
+        const remainingMins = Math.ceil((attempts.blockedUntil - now) / 60000);
+        return sendJson(res, 429, { 
+          error: `Acceso bloqueado por seguridad tras varios intentos fallidos. Intenta nuevamente en ${remainingMins} minuto(s).` 
+        });
+      }
+
       const payload = await parseBody(req);
       const data = readStoreData();
       const currentPin = String((data.settings && data.settings.adminPin) || '1234');
       const inputPin = String(payload.pin || payload.password || '').trim();
 
       if (inputPin === currentPin) {
+        // Éxito: restablecer contador de fallos
+        failedLoginAttempts.delete(ip);
         const token = generateAdminToken(currentPin);
         return sendJson(res, 200, {
           success: true,
@@ -287,9 +500,20 @@ const server = http.createServer(async (req, res) => {
           message: 'Autenticación exitosa como Creador'
         });
       } else {
+        // Fallo: incrementar intentos y bloquear si llega a 5
+        attempts.count = (attempts.count || 0) + 1;
+        if (attempts.count >= 5) {
+          attempts.blockedUntil = now + (15 * 60 * 1000); // 15 minutos de bloqueo
+          failedLoginAttempts.set(ip, attempts);
+          return sendJson(res, 429, { 
+            error: 'Has superado el límite de 5 intentos fallidos. Por seguridad, el acceso ha sido bloqueado por 15 minutos.' 
+          });
+        }
+        failedLoginAttempts.set(ip, attempts);
+        const remaining = 5 - attempts.count;
         return sendJson(res, 401, {
           success: false,
-          error: 'PIN de creador incorrecto'
+          error: `PIN de creador incorrecto. Te quedan ${remaining} intento(s) antes del bloqueo temporal.`
         });
       }
     } catch (err) {
@@ -307,7 +531,7 @@ const server = http.createServer(async (req, res) => {
 
   // SECURITY GUARD: Protect all API mutation endpoints (POST, PUT, DELETE)
   const isMutation = (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE');
-  if (pathname.startsWith('/api/') && isMutation && pathname !== '/api/facebook/import') {
+  if (pathname.startsWith('/api/') && isMutation && pathname !== '/api/admin/login') {
     if (!verifyAdminToken(req)) {
       req.resume();
       return sendJson(res, 403, {
@@ -357,30 +581,47 @@ const server = http.createServer(async (req, res) => {
       const payload = await parseBody(req);
       const data = readStoreData();
       
-      // Support array of images (up to 10)
-      let imagesList = [];
-      if (Array.isArray(payload.images) && payload.images.length > 0) {
-        imagesList = payload.images.slice(0, 10);
-      } else if (payload.image) {
-        imagesList = [payload.image];
-      } else {
-        imagesList = ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'];
+      const productName = payload.name || 'Producto sin nombre';
+      const folderName = payload.folder || sanitizeFolderName(productName);
+      const productDir = path.join(UPLOADS_DIR, folderName);
+      if (!fs.existsSync(productDir)) {
+        fs.mkdirSync(productDir, { recursive: true });
       }
+
+      // Support array of images (up to 10), saving any base64 directly to the product folder
+      let rawImages = [];
+      if (Array.isArray(payload.images) && payload.images.length > 0) {
+        rawImages = payload.images.slice(0, 10);
+      } else if (payload.image) {
+        rawImages = [payload.image];
+      }
+
+      const imagesList = rawImages.map((img, idx) => {
+        if (typeof img === 'string' && img.startsWith('data:')) {
+          return saveBase64Image(img, `foto_${String(idx + 1).padStart(2, '0')}.jpg`, folderName);
+        }
+        return img;
+      });
 
       const newProduct = {
         id: 'prod-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
         code: (payload.code || '').trim().toUpperCase(),
-        name: payload.name || 'Producto sin nombre',
+        name: productName,
         category: payload.category || 'Tecnología y Computación',
         price: Number(payload.price) || 0,
         originalPrice: payload.originalPrice ? Number(payload.originalPrice) : null,
-        image: imagesList[0], // primary image
-        images: imagesList,   // full list (up to 10 photos)
-        stock: Number(payload.stock) !== undefined ? Number(payload.stock) : 10,
+        image: imagesList[0] || '',
+        images: imagesList,
+        stock: payload.stock !== undefined ? Number(payload.stock) : 5,
         featured: Boolean(payload.featured),
-        description: payload.description || '',
+        description: payload.description || `Producto: ${productName}`,
+        folder: folderName,
+        folderSource: folderName,
         createdAt: new Date().toISOString()
       };
+
+      // Guardar archivo producto.txt dentro de la carpeta del producto
+      writeProductTxt(productDir, newProduct);
 
       data.products.unshift(newProduct);
 
@@ -412,17 +653,32 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 404, { error: 'Producto no encontrado' });
       }
 
-      let updatedImages = data.products[index].images || [data.products[index].image];
-      if (Array.isArray(payload.images)) {
-        updatedImages = payload.images.slice(0, 10);
-      } else if (payload.image) {
-        updatedImages = [payload.image];
+      const prodName = payload.name !== undefined ? payload.name : data.products[index].name;
+      const folderName = payload.folder || data.products[index].folder || sanitizeFolderName(prodName);
+      const productDir = path.join(UPLOADS_DIR, folderName);
+      if (!fs.existsSync(productDir)) {
+        fs.mkdirSync(productDir, { recursive: true });
       }
+
+      let rawImages = data.products[index].images || [data.products[index].image];
+      if (Array.isArray(payload.images)) {
+        rawImages = payload.images.slice(0, 10);
+      } else if (payload.image) {
+        rawImages = [payload.image];
+      }
+
+      // Guardar cualquier imagen base64 dentro de la carpeta exclusiva del producto
+      const updatedImages = rawImages.map((img, idx) => {
+        if (typeof img === 'string' && img.startsWith('data:')) {
+          return saveBase64Image(img, `foto_${String(idx + 1).padStart(2, '0')}.jpg`, folderName);
+        }
+        return img;
+      });
 
       data.products[index] = {
         ...data.products[index],
         code: payload.code !== undefined ? String(payload.code).trim().toUpperCase() : (data.products[index].code || ''),
-        name: payload.name !== undefined ? payload.name : data.products[index].name,
+        name: prodName,
         category: payload.category !== undefined ? payload.category : data.products[index].category,
         price: payload.price !== undefined ? Number(payload.price) : data.products[index].price,
         originalPrice: payload.originalPrice !== undefined ? (payload.originalPrice ? Number(payload.originalPrice) : null) : data.products[index].originalPrice,
@@ -431,8 +687,13 @@ const server = http.createServer(async (req, res) => {
         stock: payload.stock !== undefined ? Number(payload.stock) : data.products[index].stock,
         featured: payload.featured !== undefined ? Boolean(payload.featured) : data.products[index].featured,
         description: payload.description !== undefined ? payload.description : data.products[index].description,
+        folder: folderName,
+        folderSource: folderName,
         updatedAt: new Date().toISOString()
       };
+
+      // Actualizar producto.txt dentro de la carpeta
+      writeProductTxt(productDir, data.products[index]);
 
       writeStoreData(data);
       return sendJson(res, 200, { success: true, product: data.products[index] });
@@ -559,7 +820,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   // Helper to save a single base64 image or video
-  function saveBase64Image(data, filename) {
+  function saveBase64Image(data, filename, folderName = '') {
     const commaIndex = data.indexOf(',');
     let buffer;
     let ext = '.jpg';
@@ -590,23 +851,44 @@ const server = http.createServer(async (req, res) => {
       .substring(0, 30);
 
     const savedFilename = `mao_${Date.now()}_${Math.random().toString(36).substring(2, 6)}_${safeBaseName}${ext}`;
-    const filePath = path.join(UPLOADS_DIR, savedFilename);
 
+    let targetDir = UPLOADS_DIR;
+    let publicUrl = `/uploads/${savedFilename}`;
+
+    if (folderName && typeof folderName === 'string') {
+      const cleanFolder = folderName.replace(/[<>:"/\\|?*]/g, '').trim();
+      if (cleanFolder) {
+        targetDir = path.join(UPLOADS_DIR, cleanFolder);
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+        publicUrl = `/uploads/${encodeURIComponent(cleanFolder)}/${savedFilename}`;
+      }
+    }
+
+    const filePath = path.join(targetDir, savedFilename);
     fs.writeFileSync(filePath, buffer);
-    return `/uploads/${savedFilename}`;
+    return publicUrl;
   }
 
   // POST /api/upload - Handle Single Image Upload
   if (pathname === '/api/upload' && req.method === 'POST') {
     try {
       const payload = await parseBody(req);
-      const { filename, data } = payload;
+      const { filename, data, folder, productId } = payload;
 
       if (!data) {
         return sendJson(res, 400, { error: 'No se recibió imagen para guardar' });
       }
 
-      const publicUrl = saveBase64Image(data, filename);
+      let targetFolder = folder || '';
+      if (!targetFolder && productId) {
+        const store = readStoreData();
+        const found = store.products.find(p => p.id === productId);
+        if (found && found.folder) targetFolder = found.folder;
+      }
+
+      const publicUrl = saveBase64Image(data, filename, targetFolder);
       return sendJson(res, 200, { success: true, url: publicUrl });
     } catch (err) {
       console.error('Error saving uploaded image:', err);
@@ -619,6 +901,14 @@ const server = http.createServer(async (req, res) => {
     try {
       const payload = await parseBody(req);
       const items = Array.isArray(payload.images) ? payload.images.slice(0, 10) : [];
+      const { folder, productId } = payload;
+
+      let targetFolder = folder || '';
+      if (!targetFolder && productId) {
+        const store = readStoreData();
+        const found = store.products.find(p => p.id === productId);
+        if (found && found.folder) targetFolder = found.folder;
+      }
 
       if (items.length === 0) {
         return sendJson(res, 400, { error: 'No se recibieron imágenes' });
@@ -628,9 +918,9 @@ const server = http.createServer(async (req, res) => {
         if (typeof item === 'string') {
           // If it's already an external URL or uploaded path, keep it
           if (item.startsWith('http') || item.startsWith('/uploads/')) return item;
-          return saveBase64Image(item, `image_${idx}.jpg`);
+          return saveBase64Image(item, `image_${idx}.jpg`, targetFolder);
         } else if (item && item.data) {
-          return saveBase64Image(item.data, item.filename || `image_${idx}.jpg`);
+          return saveBase64Image(item.data, item.filename || `image_${idx}.jpg`, targetFolder);
         }
         return null;
       }).filter(Boolean);
@@ -889,10 +1179,10 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // POST /api/sync-google-sheets - Fetch live Google Sheets and sync all product prices
+  // POST /api/sync-google-sheets - Fetch live Google Sheets and sync all product data & txt files
   if (pathname === '/api/sync-google-sheets' && req.method === 'POST') {
     try {
-      const gsheetUrl = 'https://docs.google.com/spreadsheets/d/1elmMKkIfhdNnoIqicXx8OfCO8fhOfBhN/gviz/tq?tqx=out:csv&sheet=IMPORTACIONES';
+      const gsheetUrl = 'https://docs.google.com/spreadsheets/d/1elmMKkIfhdNnoIqicXx8OfCO8fhOfBhN/gviz/tq?tqx=out:csv&gid=1345510566';
       
       const fetchCSV = (url) => {
         return new Promise((resolve, reject) => {
@@ -909,70 +1199,57 @@ const server = http.createServer(async (req, res) => {
 
       const rawCSV = await fetchCSV(gsheetUrl);
       
-      // Parse CSV into rows
-      const lines = rawCSV.split(/\r?\n/).filter(line => line.trim().length > 0);
+      // Parse CSV into rows accurately
       const rows = [];
-      for (const line of lines) {
-        const row = [];
-        let insideQuote = false;
-        let entry = '';
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"') {
-            if (insideQuote && line[i + 1] === '"') {
-              entry += '"';
-              i++;
-            } else {
-              insideQuote = !insideQuote;
-            }
-          } else if (char === ',' && !insideQuote) {
-            row.push(entry.trim());
-            entry = '';
-          } else {
-            entry += char;
-          }
+      let row = [];
+      let inQuotes = false;
+      let field = '';
+      for (let i = 0; i < rawCSV.length; i++) {
+        const c = rawCSV[i];
+        const next = rawCSV[i + 1];
+        if (c === '"') {
+          if (inQuotes && next === '"') { field += '"'; i++; }
+          else inQuotes = !inQuotes;
+        } else if (c === ',' && !inQuotes) {
+          row.push(field.trim());
+          field = '';
+        } else if ((c === '\r' || c === '\n') && !inQuotes) {
+          if (c === '\r' && next === '\n') i++;
+          row.push(field.trim());
+          if (row.length > 1 || row[0] !== '') rows.push(row);
+          row = [];
+          field = '';
+        } else {
+          field += c;
         }
-        row.push(entry.trim());
-        rows.push(row);
       }
+      if (field || row.length > 0) { row.push(field.trim()); rows.push(row); }
 
-      const codeStats = new Map();
-      const nameStats = new Map();
-      const allSheetItems = [];
-
+      // Map rows from Sheet
+      const sheetItems = [];
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
-        const code = (r[2] || '').trim().toUpperCase();
-        const name = (r[3] || '').trim();
-        const rawPrice = (r[9] || '').replace(/[^\d]/g, '');
-        const price = parseInt(rawPrice, 10);
-        const isSold = (r[10] || '').trim() === '1';
+        const itemCode = (r[2] || '').trim().toUpperCase();
+        const itemName = (r[3] || '').trim();
+        const itemDesc = (r[4] || '').trim();
+        const amazonLink = (r[5] || '').trim();
+        const fbLink = (r[6] || '').trim();
+        const itemPriceRaw = (r[10] || '').trim();
+        const itemSoldRaw = (r[11] || '').trim();
 
-        if (code) {
-          if (!codeStats.has(code)) {
-            codeStats.set(code, { code, names: new Set(), totalBought: 0, totalSold: 0, price: 0 });
-          }
-          const cs = codeStats.get(code);
-          if (name) cs.names.add(name);
-          cs.totalBought += 1;
-          if (isSold) cs.totalSold += 1;
-          if (!isNaN(price) && price >= 5000) cs.price = price;
-        }
+        const cleanPrice = parseInt(itemPriceRaw.replace(/[^0-9]/g, ''), 10) || 0;
 
-        if (name) {
-          const nameKey = name.toLowerCase();
-          if (!nameStats.has(nameKey)) {
-            nameStats.set(nameKey, { name, codes: new Set(), totalBought: 0, totalSold: 0, price: 0 });
-          }
-          const ns = nameStats.get(nameKey);
-          if (code) ns.codes.add(code);
-          ns.totalBought += 1;
-          if (isSold) ns.totalSold += 1;
-          if (!isNaN(price) && price >= 5000) ns.price = price;
-        }
-
-        if (code || name) {
-          allSheetItems.push({ code, name, price, isSold });
+        if (itemCode || itemName) {
+          sheetItems.push({
+            code: itemCode,
+            name: itemName,
+            description: itemDesc,
+            amazonLink: amazonLink.startsWith('http') ? amazonLink : '',
+            fbLink: fbLink.startsWith('http') ? fbLink : '',
+            price: cleanPrice,
+            sold: itemSoldRaw === '1',
+            normName: (itemName || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+          });
         }
       }
 
@@ -980,98 +1257,76 @@ const server = http.createServer(async (req, res) => {
       let updatedCount = 0;
       let matchedCount = 0;
       let soldOutCount = 0;
-      const updatedDetails = [];
+      let txtUpdatedCount = 0;
 
       for (const prod of data.products) {
-        const title = prod.name;
-        let matchedItem = null;
-        let code = null;
+        let sheetMatch = null;
 
-        // 1. Explicit P-Code e.g. P560, P-371, P528
-        const pMatch = title.match(/\bP\s*[-_]?\s*(\d{1,4})\b/i);
-        if (pMatch) {
-          code = 'P' + pMatch[1];
-          matchedItem = codeStats.get(code);
+        // Match por código
+        if (prod.code) {
+          sheetMatch = sheetItems.find(s => s.code === prod.code.toUpperCase());
         }
 
-        // 2. Trailing code at end of title e.g. ", 561" or "- 491"
-        if (!matchedItem) {
-          const endMatch = title.match(/(?:,\s*|-\s*|\.\s*|\s+)(\d{2,4})\s*$/);
-          if (endMatch) {
-            code = 'P' + endMatch[1];
-            matchedItem = codeStats.get(code);
-          }
+        // Match por nombre si no se encontró por código
+        if (!sheetMatch && prod.name) {
+          const pNorm = (prod.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          sheetMatch = sheetItems.find(s => s.normName && (s.normName.includes(pNorm.substring(0, 20)) || pNorm.includes(s.normName.substring(0, 20))));
         }
 
-        // 3. Name lookup fallback
-        if (!matchedItem) {
-          matchedItem = nameStats.get(title.toLowerCase().trim());
-          if (matchedItem && matchedItem.codes.size > 0) {
-            code = Array.from(matchedItem.codes)[0];
-          }
-        }
-
-        // 4. Fuzzy keyword match
-        if (!matchedItem) {
-          const pWords = title.toLowerCase().split(/\s+/).filter(w => w.length > 4);
-          let bestMatch = null;
-          let bestScore = 0;
-
-          for (const item of allSheetItems) {
-            if (!item.name) continue;
-            const itemLower = item.name.toLowerCase();
-            let matchCount = 0;
-            for (const w of pWords) {
-              if (itemLower.includes(w)) matchCount++;
-            }
-            if (matchCount > bestScore && matchCount >= 3) {
-              bestScore = matchCount;
-              bestMatch = item;
-            }
-          }
-
-          if (bestMatch && bestMatch.code) {
-            code = bestMatch.code;
-            matchedItem = codeStats.get(code);
-          }
-        }
-
-        if (code) {
-          prod.code = code;
-        }
-
-        if (matchedItem) {
+        if (sheetMatch) {
           matchedCount++;
-          let hasChanged = false;
-          const oldPrice = prod.price;
-          const oldStock = prod.stock;
+          let changed = false;
 
-          if (matchedItem.price >= 5000 && prod.price !== matchedItem.price) {
-            prod.price = matchedItem.price;
-            hasChanged = true;
+          if (sheetMatch.code && prod.code !== sheetMatch.code) {
+            prod.code = sheetMatch.code;
+            changed = true;
           }
 
-          const availableStock = matchedItem.totalBought - matchedItem.totalSold;
-          const newStock = availableStock <= 0 ? 0 : availableStock;
-          if (prod.stock !== newStock) {
-            prod.stock = newStock;
-            hasChanged = true;
+          if (sheetMatch.price > 0 && prod.price !== sheetMatch.price) {
+            prod.price = sheetMatch.price;
+            changed = true;
           }
 
-          if (newStock === 0) soldOutCount++;
+          if (sheetMatch.description && (!prod.description || prod.description.startsWith('Producto:'))) {
+            prod.description = sheetMatch.description;
+            changed = true;
+          }
 
-          if (hasChanged) {
+          if (sheetMatch.sold && prod.stock > 0) {
+            prod.stock = 0;
+            changed = true;
+          }
+
+          if (Number(prod.stock) <= 0) {
+            soldOutCount++;
+          }
+
+          if (changed) {
             prod.updatedAt = new Date().toISOString();
             updatedCount++;
-            updatedDetails.push({
-              id: prod.id,
-              name: prod.name,
-              code: prod.code || '',
-              oldPrice,
-              newPrice: prod.price,
-              stock: prod.stock
-            });
           }
+        }
+
+        // Asegurar que cada producto tenga su carpeta y archivo producto.txt actualizado
+        const folderName = prod.folder || sanitizeFolderName(prod.name);
+        prod.folder = folderName;
+        const folderPath = path.join(UPLOADS_DIR, folderName);
+
+        // Detectar imágenes locales de la carpeta
+        if (fs.existsSync(folderPath)) {
+          const files = fs.readdirSync(folderPath);
+          const imgFiles = files
+            .filter(f => /\.(jpe?g|png|webp|mp4)$/i.test(f))
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+          if (imgFiles.length > 0) {
+            const newUrls = imgFiles.map(f => `/uploads/${encodeURIComponent(folderName)}/${encodeURIComponent(f)}`);
+            prod.images = newUrls;
+            prod.image = newUrls[0];
+          }
+
+          writeProductTxt(folderPath, prod);
+          txtUpdatedCount++;
         }
       }
 
@@ -1082,12 +1337,12 @@ const server = http.createServer(async (req, res) => {
         updatedCount,
         matchedCount,
         soldOutCount,
+        txtUpdatedCount,
         totalProducts: data.products.length,
-        totalSheetRows: rows.length,
-        details: updatedDetails
+        totalSheetItems: sheetItems.length
       });
     } catch (err) {
-      console.error('Error syncing Google Sheet prices:', err);
+      console.error('Error syncing Google Sheet data:', err);
       return sendJson(res, 500, { error: err.message });
     }
   }
@@ -1137,11 +1392,13 @@ const server = http.createServer(async (req, res) => {
 
   fs.stat(normalizedPath, (err, stats) => {
     if (err || !stats.isFile()) {
-      // If client-side route, fallback to index.html
-      const fallbackIndex = path.join(PUBLIC_DIR, 'index.html');
-      if (fs.existsSync(fallbackIndex)) {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        return fs.createReadStream(fallbackIndex).pipe(res);
+      // Never fallback to index.html for uploads or api routes or files with extensions
+      if (!pathname.startsWith('/uploads/') && !pathname.startsWith('/api/') && !path.extname(pathname)) {
+        const fallbackIndex = path.join(PUBLIC_DIR, 'index.html');
+        if (fs.existsSync(fallbackIndex)) {
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          return fs.createReadStream(fallbackIndex).pipe(res);
+        }
       }
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Archivo no encontrado');
@@ -1172,7 +1429,11 @@ const server = http.createServer(async (req, res) => {
       'Content-Type': contentType,
       'Accept-Ranges': 'bytes',
       'Content-Length': stats.size,
-      'Cache-Control': 'no-cache, no-store, must-revalidate'
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin'
     });
     fs.createReadStream(normalizedPath).pipe(res);
   });
